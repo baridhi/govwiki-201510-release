@@ -1,0 +1,19 @@
+main:
+    resource: "@GovWikiAdminBundle/Controller/MainController.php"
+    type:     annotation
+    prefix:   /
+
+government:
+    resource: "@GovWikiAdminBundle/Controller/GovernmentController.php"
+    type:     annotation
+    prefix:   /government
+
+electedofficial:
+    resource: "@GovWikiAdminBundle/Controller/ElectedOfficialController.php"
+    type:     annotation
+    prefix:   /electedofficial
+
+legisltaion:
+    resource: "@GovWikiAdminBundle/Controller/LegislationController.php"
+    type:     annotation
+    prefix:   /legislation
