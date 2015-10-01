@@ -1,4 +1,3 @@
-govwiki
-=======
+# govwiki-201510-release
+Code base associated with the October 2015 release of CPC Civic Profiles.
 
-A Symfony project created on August 24, 2015, 8:18 am.
