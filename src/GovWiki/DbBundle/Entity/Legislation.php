@@ -48,7 +48,7 @@ class Legislation
     /**
      * @var string
      *
-     * @ORM\Column(name="summary", type="string", length=255, nullable=true)
+     * @ORM\Column(name="summary", type="text", nullable=true)
      */
     private $summary;
 
@@ -89,6 +89,14 @@ class Legislation
      * @Exclude
      */
     private $government;
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->name;
+    }
 
     /**
      * Constructor
@@ -278,6 +286,7 @@ class Legislation
     public function addElectedOfficialVote(\GovWiki\DbBundle\Entity\ElectedOfficialVote $electedOfficialVotes)
     {
         $this->electedOfficialVotes[] = $electedOfficialVotes;
+        $electedOfficialVotes->setLegislation($this);
 
         return $this;
     }

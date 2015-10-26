@@ -37,3 +37,18 @@ publicstatement:
     resource: "@GovWikiAdminBundle/Controller/PublicStatementController.php"
     type:     annotation
     prefix:   /
+
+createrequest:
+    resource: "@GovWikiAdminBundle/Controller/CreateRequestController.php"
+    type:     annotation
+    prefix:   /createrequest
+
+editrequest:
+    resource: "@GovWikiAdminBundle/Controller/EditRequestController.php"
+    type:     annotation
+    prefix:   /editrequest
+
+user:
+    resource: "@GovWikiAdminBundle/Controller/UserController.php"
+    type:     annotation
+    prefix:   /user

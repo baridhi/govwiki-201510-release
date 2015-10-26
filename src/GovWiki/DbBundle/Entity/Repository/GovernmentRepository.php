@@ -3,6 +3,8 @@
 namespace GovWiki\DbBundle\Entity\Repository;
 
 use Doctrine\ORM\EntityRepository;
+use Doctrine\ORM\Query\Expr\Join;
+use GovWiki\DbBundle\Entity\ElectedOfficial;
 use JMS\Serializer\SerializationContext;
 
 /**
@@ -29,7 +31,13 @@ class GovernmentRepository extends EntityRepository
         $serializedGovernment = $serializer->serialize($government, 'json', SerializationContext::create()->enableMaxDepthChecks());
         $serializedMaxRanks   = $serializer->serialize($maxRanks, 'json');
 
-        $finData = $em->getRepository('GovWikiDbBundle:FinData')->findByGovernment($government);
+        $finData = $em->createQuery(
+            'SELECT fd FROM GovWikiDbBundle:FinData fd
+            LEFT JOIN fd.government g
+            LEFT JOIN fd.captionCategory cc
+            WHERE g = :government
+            ORDER BY cc.id, fd.displayOrder'
+        )->setParameter('government', $government)->getResult();
         foreach ($finData as $finDataItem) {
             $financialStatementsGroups[$finDataItem->getCaption()][] = $finDataItem;
         }
@@ -103,6 +111,35 @@ class GovernmentRepository extends EntityRepository
         }
 
         return $result;
+    }
+
+    /**
+     * Get list of all elected officials from government by one of
+     * elected official.
+     *
+     * @param integer $id Elected official id.
+     *
+     * @return ElectedOfficial[]
+     */
+    public function governmentElectedOfficial($id)
+    {
+        $qb2 = $this->createQueryBuilder('Gov2');
+        $qb2
+            ->select('Gov2.id')
+            ->join('Gov2.electedOfficials', 'EO2')
+            ->where(
+                $qb2->expr()->eq('EO2.id', $id)
+            );
+
+        $qb = $this->getEntityManager()->createQueryBuilder();
+        return $qb
+            ->from('GovWikiDbBundle:ElectedOfficial', 'EO')
+            ->select('EO.id, EO.fullName')
+            ->where(
+                $qb->expr()->in('EO.government', $qb2->getDQL())
+            )
+            ->getQuery()
+            ->getResult();
     }
 
     /**

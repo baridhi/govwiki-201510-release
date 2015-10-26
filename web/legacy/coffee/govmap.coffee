@@ -8,7 +8,9 @@ map = new GMaps
   zoom: 6
   minZoom: 6
   scrollwheel: true
+  mapTypeControl: false
   panControl: false
+  mapTypeControl: false
   zoomControl: true
   zoomControlOptions:
     style: google.maps.ZoomControlStyle.SMALL
@@ -28,7 +30,8 @@ rebuild_filter = ->
 # legendType = city, school district, special district, counties
 get_records2 = (legendType, onsuccess) ->
   $.ajax
-    url:"http://45.55.0.145/api/government/get-markers-data"
+    url:"http://45.55.0.145/api/government/get-markers-data?limit=600"
+#    url:"http://45.55.0.145/api/government/get-markers-data"
     data: { altTypes: legendType }
     dataType: 'json'
     cache: true
@@ -90,7 +93,7 @@ add_marker = (rec)->
     lat: rec.latitude
     lng: rec.longitude
     icon: get_icon(rec.altType)
-    title:  "#{rec.gov_name}, #{rec.type}"
+    title:  "#{rec.name}, #{rec.type}"
     infoWindow:
       content: "
         <div><a href='javascript:void(0);' class='info-window-uri' data-uri='/#{rec.altTypeSlug}/#{rec.slug}'><strong>#{rec.name}</strong></a></div>

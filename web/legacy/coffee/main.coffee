@@ -17,6 +17,7 @@ gov_selector = null
 templates = new Templates2
 active_tab = ""
 undef = null
+authorized = false
 
 Handlebars.registerHelper 'if_eq', (a, b, opts) ->
     if `a == b`
@@ -42,7 +43,7 @@ window.GOVWIKI =
 
 GOVWIKI.get_counties = get_counties = (callback) ->
     $.ajax
-        url: 'data/county_geography_ca_2.json'
+        url: '/legacy/data/county_geography_ca_2.json'
         dataType: 'json'
         cache: true
         success: (countiesJSON) ->
@@ -97,7 +98,7 @@ GOVWIKI.draw_polygons = draw_polygons = (countiesJSON) ->
                             $('#details').show()
                             $('#searchIcon').show()
                             window.history.pushState {template: compiled_gov_template}, 'CPC Civic Profiles', uri
-        })
+            })
 
 window.remember_tab = (name)-> active_tab = name
 
@@ -134,7 +135,6 @@ $(document).on 'click', '#fieldTabs a', (e) ->
         $('.fin-values-block [data-col="1"] .currency-sign').css('right', finValWidthMax1 + 27)
         $('.fin-values-block [data-col="2"] .currency-sign').css('right', finValWidthMax2 + 27)
         $('.fin-values-block [data-col="3"] .currency-sign').css('right', finValWidthMax3 + 27)
-
 
 $(document).tooltip({selector: "[class='media-tooltip']", trigger: 'click'})
 
@@ -282,33 +282,427 @@ window.onhashchange = (e) ->
 
 # =====================================================================
 
+route = document.location.pathname.split('/').filter((itm)-> if itm isnt "" then itm else false);
+routeType = route.length;
+
 GOVWIKI.history = (index) ->
     if index == 0
         searchContainer = $('#searchContainer').text();
         if(searchContainer != '')
             window.history.pushState {}, 'CPC Civic Profiles', '/'
             $('#searchIcon').hide()
+            $('#stantonIcon').hide()
         else
             document.location.pathname = '/'
         $('#details').hide()
         $('#searchContainer').show()
         return false
-    window.history.go(index)
-
+    if (history.state != null && history.state.template != undefined)
+        window.history.go(index);
+    else
+        route.pop()
+        document.location.pathname = '/' + route.join('/')
 
 window.addEventListener 'popstate', (event) ->
+    console.log(window.history.state)
     if window.history.state isnt null
         $('#details').html event.state.template
         route = document.location.pathname.split('/').length-1;
         if route is 2 then $('#stantonIcon').hide()
         if route is 1 then $('#searchContainer').show()
+        GOVWIKI.show_data_page()
     else
-        document.location.reload()
+        GOVWIKI.show_search_page()
+#    else
+#        document.location.reload()
+
+# Refresh Disqus thread
+refresh_disqus = (newIdentifier, newUrl, newTitle) ->
+    DISQUS.reset
+        reload: true,
+        config: () ->
+            this.page.identifier = newIdentifier
+            this.page.url = newUrl
+            this.page.title = newTitle
+
+#
+# Sort table by column.
+# @param string table  JQuery selector.
+# @param number colNum Column number.
+#
+sortTable = (table, colNum) ->
+    #
+    # Data rows to sort
+    #
+    rows = $(table + ' tbody  [data-id]').get()
+    #
+    # Last row which contains "Add new ..."
+    #
+    lastRow = $(table + ' tbody  tr:last').get();
+    #
+    # Clicked column.
+    #
+    column = $(table + ' tbody tr:first').children('th').eq(colNum)
+    makeSort = true
+
+    if column.hasClass('desc')
+      #
+      # Table currently sorted in descending order.
+      # Restore row order.
+      #
+      column.removeClass('desc').addClass('origin')
+      rows = column.data('origin')
+      makeSort = false;
+    else if column.hasClass('asc')
+      #
+      # Table currently sorted in ascending order.
+      # Sort in desc order.
+      #
+      column.removeClass('asc').addClass('desc')
+      sortFunction = (a, b) ->
+        A = $(a).children('td').eq(colNum).text().toUpperCase()
+        B = $(b).children('td').eq(colNum).text().toUpperCase()
+        if A < B then return 1
+        if A > B then return -1
+        return 0
+
+    else if column.hasClass('origin')
+      #
+      # Original table data order.
+      # Sort in asc order.
+      #
+      column.addClass('asc')
+      sortFunction = (a, b) ->
+        A = $(a).children('td').eq(colNum).text().toUpperCase()
+        B = $(b).children('td').eq(colNum).text().toUpperCase()
+        if A < B then return -1
+        if A > B then return 1
+        return 0
+    else
+      #
+      # Table not ordered yet.
+      # Store original data position and sort in asc order.
+      #
+
+      column.addClass('asc')
+      column.data('origin', rows.slice(0))
+
+      sortFunction = (a, b) ->
+        A = $(a).children('td').eq(colNum).text().toUpperCase()
+        B = $(b).children('td').eq(colNum).text().toUpperCase()
+        if A < B then return -1
+        if A > B then return 1
+        return 0
+
+    if (makeSort) then rows.sort sortFunction
+    $.each rows, (index, row) ->
+        $(table).children('tbody').append(row)
+    $(table).children('tbody').append(lastRow)
+
+initTableHandlers = (person) ->
+    $('[data-toggle="tooltip"]').tooltip()
+
+    $('.editable').editable({stylesheets: false,type: 'textarea', showbuttons: 'bottom', display: true, emptytext: ' '})
+    $('.editable').off('click');
+
+    $('table').on 'click', '.glyphicon-pencil', (e) ->
+        e.preventDefault();
+        e.stopPropagation();
+        if e.currentTarget.dataset.noEditable isnt undefined then return
+        if (!authorized)
+            $.ajax '/editrequest/new', {
+                method: 'POST',
+                complete: (response) ->
+                    if response.status is 401
+                        showModal('/login')
+                    else if response.status is 200
+                        authorized = true
+                        $(e.currentTarget).closest('td').find('.editable').editable('toggle');
+                error: (error) ->
+                    if error.status is 401 then showModal('/login')
+            }
+        else
+            $(e.currentTarget).closest('td').find('.editable').editable('toggle');
+
+    #
+    # Add sort handlers.
+    #
+    $('.sort').on 'click', (e) ->
+      e.preventDefault()
+      e.stopPropagation()
+      type = $(this).attr('data-sort-type')
+
+      if type is 'year'
+        #
+        # Sort by year.
+        #
+        sortTable('[data-entity-type="Contribution"]', 0)
+      else if type is 'name'
+        #
+        # Sort by name.
+        #
+        sortTable('[data-entity-type="Contribution"]', 1)
+      else if type is 'amount'
+        #
+        # Sort by amount.
+        #
+        sortTable('[data-entity-type="Contribution"]', 3)
+
+    $('a').on 'save', (e, params) ->
+        entityType = $(e.currentTarget).closest('table')[0].dataset.entityType
+        id = $(e.currentTarget).closest('tr')[0].dataset.id
+        field = Object.keys($(e.currentTarget).closest('td')[0].dataset)[0]
+        sendObject = {
+            editRequest: {
+                entityName: entityType,
+                entityId: id,
+                changes: {}
+            }
+        }
+        sendObject.editRequest.changes[field] = params.newValue
+        sendObject.editRequest = JSON.stringify(sendObject.editRequest);
+        console.log sendObject
+        $.ajax '/editrequest/create', {
+            method: 'POST',
+            data: sendObject,
+            dataType: 'text/json',
+            success: (response) ->
+                text = JSON.parse(response.responseText)
+            error: (error) ->
+                if error.status is 401 then showModal('/login')
+        }
+
+    $('table').on 'click', '.add', (e) ->
+        tabPane = $(e.target).closest('.tab-pane')
+        tableType = tabPane[0].id
+        if (!authorized)
+          $.ajax '/editrequest/new', {
+            method: 'POST',
+            complete: (response) ->
+              if response.status is 401
+                showModal('/login')
+              else if response.status is 200
+                authorized = true
+            error: (error) ->
+              if error.status is 401 then showModal('/login')
+          }
+          return false;
+
+#        if (!authorized) then return false;
+
+#        if (!authorized)
+#            $.ajax '/editrequest/new', {
+#                method: 'POST',
+#                complete: (response) ->
+#                    if response.status is 401
+#                        showModal('/login')
+#                    else if response.status is 200
+#                        authorized = true
+#                error: (error) ->
+#                    if error.status is 401 then showModal('/login')
+#            }
+#
+#        if (!authorized) then return false;
+
+        currentEntity = null
+        console.log(tableType)
+        if tableType is 'Votes'
+            currentEntity = 'Legislation'
+            $('#addVotes').modal('toggle').find('form')[0].reset()
+        else if tableType is 'Contributions'
+            currentEntity = 'Contribution'
+            $('#addContributions').modal('toggle').find('form')[0].reset()
+        else if tableType is 'Endorsements'
+            currentEntity = 'Endorsement'
+            $('#addEndorsements').modal('toggle').find('form')[0].reset()
+        else if tableType is 'Statements'
+            currentEntity = 'PublicStatement'
+            $('#addStatements').modal('toggle').find('form')[0].reset()
+
+        if tabPane.hasClass('loaded') then return false
+        tabPane[0].classList.add('loaded')
+
+        personMeta = {"createRequest":{"entityName":currentEntity,"knownFields":{"electedOfficial":person.id}}}
+        $.ajax(
+            method: 'POST',
+            url: '/api/createrequest/new',
+            data: personMeta,
+            success: (data) ->
+                console.log(data);
+
+                endObj = {}
+                data.choices[0].choices.forEach (item, index) ->
+                  ids = Object.keys item
+                  ids.forEach (id) ->
+                      endObj[id] = item[id]
+
+                insertCategories = () ->
+                    select.setAttribute('name', data.choices[0].name)
+                    for key of endObj
+                        option = document.createElement('option')
+                        option.setAttribute('value', key)
+                        option.textContent = endObj[key]
+                        select.innerHTML += option.outerHTML;
+
+                select = null
+
+                if currentEntity is 'Endorsement'
+
+                else if currentEntity is 'Contribution'
+
+                else if currentEntity is 'Legislation'
+                    select = $('#addVotes select')[0]
+                    insertCategories()
+                    #
+                    # Fill elected officials votes table.
+                    #
+                    compiledTemplate = Handlebars.compile($('#legislation-vote').html())
+                    $('#electedVotes').html compiledTemplate(data);
+
+                else if currentEntity is 'PublicStatement'
+                    select = $('#addStatements select')[0]
+                    insertCategories()
+
+
+
+            error: (error) ->
+                if(error.status == 401) then showModal('/login')
+        );
+
+
+    window.addItem = (e) ->
+        newRecord = {}
+        modal = $(e.target).closest('.modal')
+        modalType = modal[0].id
+        entityType = modal[0].dataset.entityType
+        console.log(entityType);
+
+        ###
+          Get value from input fields.
+        ###
+        modal.find('input[type="text"]').each (index, element) ->
+            fieldName = Object.keys(element.dataset)[0]
+            newRecord[fieldName] = element.value
+
+        ###
+          Get value from texarea.
+        ###
+        modal.find('textarea').each (index, element) ->
+            fieldName = Object.keys(element.dataset)[0]
+            newRecord[fieldName] = element.value
+
+        associations = {}
+        if modalType != 'addVotes'
+            associations["electedOfficial"] = person.id
+        #
+        # Array of sub entities.
+        #
+        childs = []
+
+        if modalType is 'addVotes'
+            ###
+                Add information about votes.
+            ###
+            modal.find('#electedVotes').find('tr[data-elected]'). each (idx, element) ->
+                element = $(element)
+
+                #
+                # Get all sub entity fields.
+                #
+                data = Object.create null, {}
+
+                element.find('select').each (index, element) ->
+                    if element.value
+                        fieldName = Object.keys(element.dataset)[0]
+                        data[fieldName] = element.value
+
+                ###
+                  Add only if all fields is set.
+                ###
+                if Object.keys(data).length == 2
+                    fields = Object.create null, {}
+                    fields['fields'] = data
+                    fields['associations'] = Object.create null, {}
+                    fields['associations'][element.attr('data-entity-type')] = element.attr('data-elected')
+                    childEntityName = element.parent().parent().attr 'data-entity-type'
+                    childs.push({
+                        # Child type.
+                        entityName: childEntityName
+                        # Child fields.
+                        fields: fields
+                    });
+            select = modal.find('select')[0]
+            selectName = select.name
+            selectedValue = select.options[select.selectedIndex].value
+            selectedText = $(select).find(':selected').text();
+            associations[selectName] = selectedValue
+        else if modalType is 'addContributions'
+
+        else if modalType is 'addEndorsements'
+
+        else if modalType is 'addStatements'
+            select = modal.find('select')[0]
+            selectName = select.name
+            selectedValue = select.options[select.selectedIndex].value
+            selectedText = $(select).find(':selected').text();
+            associations[selectName] = selectedValue
+
+        sendObject = {
+            createRequest: {
+                entityName: entityType,
+                fields: { fields: newRecord, associations: associations, childs: childs},
+            }
+        }
+
+        tr = document.createElement 'tr'
+        for key, value of sendObject.createRequest.fields.fields
+            tr.innerHTML += "<td><a href='javascript:void(0);'
+            class='editable editable-pre-wrapped editable-click'>#{value}</a></td>"
+
+        if modalType is 'addVotes'
+            ###
+              Check if user specified how current elected official voted.
+            ###
+            add = false;
+            data = Object.create null, {}
+            console.log sendObject.createRequest.fields.childs
+            for obj in sendObject.createRequest.fields.childs
+              if Number(obj.fields.associations.electedOfficial) == Number(person.id)
+                add = true
+                data = obj.fields
+                break
+
+            #
+            # If we found, show.
+            #
+            if (add)
+              for key, value of data.fields
+                tr.innerHTML += "<td><a href='javascript:void(0);'
+            class='editable editable-pre-wrapped editable-click'>#{value}</a></td>"
+              tr.innerHTML += "<td><a href='javascript:void(0);'
+            class='editable editable-pre-wrapped editable-click'>#{selectedText}</a></td>"
+              $('#Votes tr:last-child').before(tr);
+        else if modalType is 'addContributions'
+            $('#Contributions tr:last-child').before(tr);
+        else if modalType is 'addEndorsements'
+            $('#Endorsements tr:last-child').before(tr);
+
+        console.log sendObject
+        $.ajax({
+            url: '/api/createrequest/create',
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            data: sendObject,
+            success: (data) ->
+                console.log(data);
+        });
 
 
 $('#dataContainer').on 'click', '.elected_link', (e) ->
     e.preventDefault();
-    url = e.target.pathname
+    url = e.currentTarget.pathname
     $('#details').hide()
     $('#searchContainer').hide()
     $('#dataContainer').show()
@@ -326,6 +720,14 @@ $('#dataContainer').on 'click', '.elected_link', (e) ->
 
                     person = data[0]
 
+                    if $.isEmptyObject(person)
+                        $('.loader').hide()
+                        $('#details').html '<h2>Sorry. Page not found</h2>'
+                        $('#details').css({"textAlign":"center"})
+                        $('#details').show()
+                        $('#dataContainer').show()
+                        return false;
+
                     format = {year: 'numeric', month: 'numeric', day: 'numeric'};
                     person.votes.forEach (item, itemList) ->
                         date = new Date item.legislation.date_considered;
@@ -339,6 +741,8 @@ $('#dataContainer').on 'click', '.elected_link', (e) ->
                     window.history.pushState {template: html}, 'CPC Politician Profiles', url
                     $('#details').html html
                     $('#dataContainer').css('display': 'block');
+
+                    initTableHandlers(person);
 
                     $('.vote').on 'click', (e) ->
                         id = e.currentTarget.id
@@ -355,12 +759,10 @@ $('#dataContainer').on 'click', '.elected_link', (e) ->
                     console.log e
 
 
-route = document.location.pathname.split('/').filter((itm)-> if itm isnt "" then itm else false).length;
-console.log route
 # Route /
-if route is 0
+if routeType is 0
     $('#stantonIcon').hide()
-    gov_selector = new GovSelector '.typeahead', '/data/h_types_ca_2.json', 7
+    gov_selector = new GovSelector '.typeahead', '/legacy/data/h_types_ca_2.json', 7
     gov_selector.on_selected = (evt, data, name) ->
         $('#details').hide()
         $('#searchContainer').hide()
@@ -389,7 +791,7 @@ if route is 0
     if !undef
         $('#searchContainer').html $('#search-container-template').html()
         # Load introductory text from texts/intro-text.html to #intro-text container.
-        $.get "texts/intro-text.html", (data) -> $("#intro-text").html data
+        $.get "/legacy/texts/intro-text.html", (data) -> $("#intro-text").html data
         govmap = require './govmap.coffee'
         get_counties GOVWIKI.draw_polygons
         undef = true
@@ -420,7 +822,7 @@ if route is 0
                 window.history.pushState {template: compiled_gov_template}, 'CPC Civic Profiles', uri
 
 # Route /:alt_name/:city_name
-if route is 2
+if routeType is 2
     document.title = 'CPC Civic Profiles'
     $('#details').hide()
     $('#dataContainer').show()
@@ -437,7 +839,6 @@ if route is 2
             $('.loader').hide()
             $('#details').show()
             $('#details').html templates.get_html(0, govs)
-            #get_record2 data.id
             activate_tab()
             GOVWIKI.show_data_page()
         error: (e) ->
@@ -448,7 +849,7 @@ if route is 2
         GOVWIKI.show_search_page()
 
 # Route /:alt_name/:city_name/:elected_name
-if route is 3
+if routeType is 3
     document.title = 'CPC Politician Profiles'
     $('#details').hide()
     $('#searchContainer').hide()
@@ -464,10 +865,19 @@ if route is 3
 
             person = data[0]
 
+            if $.isEmptyObject(person)
+                $('.loader').hide()
+                $('#details').html '<h2>Sorry. Page not found</h2>'
+                $('#details').css({"textAlign":"center"})
+                $('#details').show()
+                $('#dataContainer').show()
+                return false;
+
             format = {year: 'numeric', month: 'numeric', day: 'numeric'};
-            person.votes.forEach (item, itemList) ->
-                date = new Date item.legislation.date_considered;
-                item.legislation.date_considered = date.toLocaleString 'en-US', format
+            if person.votes != undefined
+                person.votes.forEach (item, itemList) ->
+                    date = new Date item.legislation.date_considered;
+                    item.legislation.date_considered = date.toLocaleString 'en-US', format
 
             tpl = $('#person-info-template').html()
             compiledTemplate = Handlebars.compile(tpl)
@@ -478,6 +888,8 @@ if route is 3
             $('#details').html html
             $('#dataContainer').css('display': 'block');
 
+            initTableHandlers(person);
+
             $('.vote').on 'click', (e) ->
                 id = e.currentTarget.id
                 # If legislationName is undefined use person name
@@ -486,17 +898,21 @@ if route is 3
                 $('#myModalLabel').text(name + ' (' + person.gov_alt_name + ')');
                 $('#conversation').modal 'show'
                 refresh_disqus id, 'http://govwiki.us' + '/' + id, name
+
             $('#stantonIcon a').text 'Return to ' + person.gov_alt_name
             window.DISQUSWIDGETS.getCount()
 
         error: (e) ->
             console.log e
 
-        # Refresh Disqus thread
-        refresh_disqus = (newIdentifier, newUrl, newTitle) ->
-            DISQUS.reset
-                reload: true,
-                config: () ->
-                    this.page.identifier = newIdentifier
-                    this.page.url = newUrl
-                    this.page.title = newTitle
+$ ->
+  $.ajax '/editrequest/new', {
+    method: 'POST',
+    complete: (response) ->
+      if response.status is 401
+        authorized = false
+      else if response.status is 200
+        authorized = true
+    error: (error) ->
+      if error.status is 401 then authorized = false
+  }
