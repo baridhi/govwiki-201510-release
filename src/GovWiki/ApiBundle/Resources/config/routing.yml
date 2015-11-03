@@ -12,3 +12,13 @@ createrequest:
     resource: "@GovWikiApiBundle/Controller/CreateRequestController.php"
     type:     annotation
     prefix:   createrequest
+
+user:
+    resource: "@GovWikiApiBundle/Controller/UserController.php"
+    type:     annotation
+    prefix:   user
+
+url:
+    resource: "@GovWikiApiBundle/Controller/UrlController.php"
+    type:     annotation
+    prefix:   url

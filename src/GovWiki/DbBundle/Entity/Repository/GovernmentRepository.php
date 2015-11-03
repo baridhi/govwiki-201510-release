@@ -5,6 +5,7 @@ namespace GovWiki\DbBundle\Entity\Repository;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr\Join;
 use GovWiki\DbBundle\Entity\ElectedOfficial;
+use GovWiki\DbBundle\Entity\Government;
 use JMS\Serializer\SerializationContext;
 
 /**
@@ -25,8 +26,11 @@ class GovernmentRepository extends EntityRepository
     {
         $em = $this->getEntityManager();
 
+        /** @var Government $government */
         $government = $this->findOneBy(['altTypeSlug' => $altTypeSlug, 'slug' => $slug]);
-        $maxRanks   = $em->getRepository('GovWikiDbBundle:MaxRank')->find(1);
+        $maxRanks   = $em->getRepository('GovWikiDbBundle:MaxRank')->findOneBy([
+            'altType' => $government->getAltType(),
+        ]);
 
         $serializedGovernment = $serializer->serialize($government, 'json', SerializationContext::create()->enableMaxDepthChecks());
         $serializedMaxRanks   = $serializer->serialize($maxRanks, 'json');
@@ -78,28 +82,29 @@ class GovernmentRepository extends EntityRepository
     }
 
     /**
-     * Get markers for map
+     * Get markers for map.
      *
-     * @param  array $altTypes
-     * @param  int   $limit
+     * @param  array   $altTypes Ignored altTypes.
+     * @param  integer $limit    Max Markers.
      * @return array
      */
     public function getMarkers($altTypes, $limit = 200)
     {
         $qb = $this->createQueryBuilder('g')
-            ->select('g.id', 'g.name', 'g.altType', 'g.type', 'g.city', 'g.zip', 'g.state', 'g.latitude', 'g.longitude', 'g.altTypeSlug', 'g.slug')
-            ->where('g.altType != :altType')
-            ->setParameter('altType', 'County');
+            ->select('g.id', 'g.name', 'g.altType', 'g.type', 'g.city', 'g.zip', 'g.state', 'g.latitude', 'g.longitude', 'g.altTypeSlug', 'g.slug');
+//            ->where('g.altType != :altType')
+//            ->setParameter('altType', $altTypes);
 
         if (!empty($altTypes)) {
             $orX = $qb->expr()->orX();
+            $parameters = [];
             foreach ($altTypes as $key => $type) {
                 if ($type != 'Special District') {
                     $orX->add($qb->expr()->eq('g.altType', ':altType'.$key));
                     $parameters['altType'.$key]  = $type;
                 }
             }
-            $parameters['altType'] = 'County';
+//            $parameters['altType'] = 'County';
             $qb->andWhere($orX)->setParameters($parameters);
         }
 
@@ -140,6 +145,43 @@ class GovernmentRepository extends EntityRepository
             )
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Compute max ranks for given alt type.
+     *
+     * @param string $altType One of the government alt type.
+     *
+     * @return array
+     */
+    public function computeMaxRanks($altType)
+    {
+        $qb = $this->createQueryBuilder('Government');
+
+        /*
+         * Get all class property with 'Rank' postfix.
+         */
+        $fields = [];
+        foreach ($this->getClassMetadata()->columnNames as $key => $value) {
+            $pos = strpos($key, 'Rank');
+            if (false !== $pos) {
+                $fields[] = $qb->expr()->max("Government.$key") .
+                    ' AS ' . substr($key, 0, $pos) . 'MaxRank';
+            }
+        }
+
+        $qb
+            ->select($fields)
+            ->where(
+                $qb->expr()->eq(
+                    'Government.altType',
+                    $qb->expr()->literal($altType)
+                )
+            );
+
+        return $qb
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**

@@ -134,9 +134,6 @@
   padding-top: 10px;
   padding-bottom: 30px;
 }
-#fieldTabs {
-  font-size: 140%;
-}
 #tabsContent {
   font-size: 140%;
   line-height: 2;
@@ -390,12 +387,12 @@ span.rank {
   background: #f00;
 }
 .blue-circle {
-  background: #add8e6;
+  background: #0000ff;
 }
 .purple-circle {
   background: #800080;
 }
-.counties-trigger .grey-line {
+.list-group-item .grey-line {
   width: 12px;
   height: 2px;
   background: #808080;
@@ -645,3 +642,45 @@ td {
     padding: 5px;
 }
 
+/*
+    Set icon for sortable columns.
+*/
+i.icon {
+    background: url('/legacy/img/bg.gif');
+    width: 21px;
+    height: 9px;
+    display: inline-block;
+}
+i.icon__bottom,
+i.icon__top {
+    height: 4px;
+    margin-bottom: 4px;
+}
+i.icon__bottom { background: url('/legacy/img/desc.gif'); }
+i.icon__top { background: url('/legacy/img/asc.gif'); }
+
+
+/*
+    Url preview.
+*/
+.url-content {
+    padding: 0 16px;
+    display: none;
+    margin-top: 5px;
+}
+.url-content-img {
+    width: 100px;
+    float: left;
+}
+.url-content-title,
+.url-content-body { margin-left: 110px; }
+.url-content-title { font-weight: bold; }
+.url-content-body { padding: 5px 2px; }
+
+/*
+    Login
+*/
+#user-text a:hover { background-color: transparent; }
+#user-text a { padding-right: 0; }
+
+#details .nav { font-size: 140%; }
