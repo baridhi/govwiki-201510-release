@@ -11,19 +11,25 @@ echo <<<EOT
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="http://californiapolicycenter.org/wp-content/uploads/sites/2/2015/04/favicon_v1.png" type="image/png">
+    <link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet">
     <title>CPC Civic Profiles</title>
     <!-- Bootstrap core CSS-->
     <!--link(href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css", rel='stylesheet')-->
     <link href="/legacy/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom styles for this page-->
     <link rel="stylesheet" href="/legacy/css/index.css">
+    <script>
+      var authorized = {$authorized}
+      var user = {username: '{$username}'}
+      
+    </script>
     <!--script(src='js_files/ie-emulation-modes-warning.js')-->
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries-->
     <!--if lt IE 9
     script(src='https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js')
     |
     script(src='https://oss.maxcdn.com/respond/1.4.2/respond.min.js')
-
+    
     -->
   </head>
   <body>
@@ -36,7 +42,7 @@ echo <<<EOT
               <li id="user-text"><a></a><span style="font-size:200%;vertical-align:middle;"></span></li>
               <li id="user"><a href="javascript:void(0);">&nbsp;&nbsp;&nbsp;<span style="font-size:200%;vertical-align:middle;"></span></a></li>
               <li id="searchIcon"><a href="javascript:void(0);" onclick="GOVWIKI.history(0)">Return to Map &nbsp;&nbsp;&nbsp;<span style="font-size:200%;vertical-align:middle;"></span></a></li>
-              <li id="stantonIcon"><a href="javascript:void(0);" onclick="GOVWIKI.history(-1)">Return to Stanton &nbsp;&nbsp;&nbsp;<span style="font-size:200%;vertical-align:middle;"></span></a></li>
+              <li id="stantonIcon"><a href="javascript:void(0);" onclick="GOVWIKI.history(-1)"><span style="font-size:200%;vertical-align:middle;"></span></a></li>
             </ul>
           </div>
         </div>
@@ -111,6 +117,12 @@ echo <<<EOT
 
     <br>
     <br>
+
+    <div class="panel panel-danger notice">
+        <div class="panel-body">
+            <p class="text-center">If you would like to help us add information to complete this profile, or if you notice any information here that may be incorrect, please contact the Center at <a href="mailto:contact@californiapolicycenter.org">contact@californiapolicycenter.org</a></p>
+        </div>
+    </div>
 
 	</div>
 </script>
@@ -246,11 +258,11 @@ echo <<<EOT
 
                     <table class="table table-hover" data-entity-type="Legislation">
                         <tr>
-                            <th>Date</th>
+                            <th class="legislation-column-date">Date</th>
                             <th>Title of Measure</th>
                             <th>Summary of Measure</th>
-                            <th style="text-align:center;">How official Voted</th>
-                            <th style="text-align:center;">Sponsored by this official?</th>
+                            <th class="legislation-column-vote">How official Voted</th>
+                            <th>Sponsored by this official?</th>
                             <th>Category</th>
                             <th></th>
                         </tr>
@@ -258,11 +270,12 @@ echo <<<EOT
                             {{#votes}}
                                 <tr data-id="{{legislation.id}}">
                                 {{#this}}
-                                    <td data-date-considered="{{date-considered}}">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Log In/Sign Up"
-                                              data-no-editable>
-                                            {{legislation.date_considered}}
-                                        </span>
+                                    <td data-date-considered="{{legislation.date-considered}}">
+                                        <a href="javascript:void(0);" data-type="date" data-pk="1"  data-format="mm/dd/yyyy"
+                                           data-placeholder="Please edit" data-title="Please edit"
+                                           class="editable editable-pre-wrapped editable-click" data-original-title=""
+                                           title="">{{legislation.date_considered}}</a>
+                                        <span class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
                                     <td data-name="{{legislation.name}}">
                                         <a href="javascript:void(0);" data-type="textarea" data-pk="1"
@@ -279,11 +292,16 @@ echo <<<EOT
                                         <span class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
                                     <td data-vote="{{vote}}">
-                                        <span data-no-editable>
-                                            {{vote}}
-                                        </span>
+                                        <a href="javascript:void(0);" data-type="select" data-source="{'Yes': 'Yes', 'No': 'No', 'Abstain': 'Abstain', 'Absence': 'Absence', 'Not in Office': 'Not in Office'}" data-pk="1"
+                                           data-placeholder="Please edit" data-title="Please edit"
+                                           class="editable editable-pre-wrapped editable-click" data-original-title=""
+                                           title="">{{vote}}</a>
+                                        <span data-id="{{id}}" class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
-                                    <td align="center" date-did-elected-official-propose-this="{{#if_eq did_elected_official_propose_this true}} Yes {{else}} No {{/if_eq}}" data-no-editable>{{#if_eq did_elected_official_propose_this true}} Yes {{else}} No {{/if_eq}}</td>
+                                    <td data-did-elected-official-propose-this="{{#if did_elected_official_propose_this}}Yes{{else}}No{{/if}}" align="center" >
+                                        <a href="javascript:void(0);" data-type="select" data-source="{'0': 'No', '1': 'Yes'}" data-pk="1" data-placeholder="Please edit" data-title="Please edit" class="editable editable-pre-wrapped editable-click" data-original-title="" title="">{{#if did_elected_official_propose_this}}Yes{{else}}No{{/if}}</a>
+                                        <span data-id="{{id}}" class="glyphicon glyphicon-pencil edit"></span>
+                                    </td>
                                     <td data-issue-category="{{legislation.issue_category.name}}" data-no-editable>{{legislation.issue_category.name}}</td>
                                     <td data-no-editable><span class="disqus-comment-count vote" id="{{../../id}}_v{{id}}" data-legislation-name="{{legislation.name}}" data-disqus-identifier="{{../../id}}_v{{id}}">0</span></td>
                                 {{/this}}
@@ -311,11 +329,11 @@ echo <<<EOT
 
                     <table class="table table-hover" data-entity-type="Contribution">
                         <tr>
-                            <th><a class="sort" href="javascript:void(0);" data-sort-type="year">Election Year</a> <i class="icon"></i></th>
-                            <th><a class="sort" href="javascript:void(0);" data-sort-type="name">Name of contributor</a> <i class="icon"></i></th>
+                            <th><a class="sort" href="javascript:void(0);" data-sort-type="year">Election Year <i class="icon"></i></a></th>
+                            <th><a class="sort" href="javascript:void(0);" data-sort-type="name">Name of contributor <i class="icon"></i></a></th>
                             <th>Ind. Exp. Desc.</th>
-                            <th><a class="sort" href="javascript:void(0);" data-sort-type="amount">Amount</a> <i class="icon"></i></th>
-                            <th><a class="sort" href="javascript:void(0);" data-sort-type="contributor-type">Contributor Type</a> <i class="glyphicon"></i></th>
+                            <th><a class="sort" href="javascript:void(0);" data-sort-type="amount">Amount <i class="icon"></i></a></th>
+                            <th><a class="sort" href="javascript:void(0);" data-sort-type="contributor-type">Contributor Type <i class="icon"></i></a></th>
                         </tr>
 
                         {{#if contributions}}
@@ -324,10 +342,10 @@ echo <<<EOT
                             <tr data-id="{{id}}">
                                 {{#this}}
                                     <td data-election-year="{{election_year}}">
-                                        <a href="javascript:void(0);" data-type="textarea" data-pk="1"
+                                        <a href="javascript:void(0);" data-type="text" data-pk="1"
                                                data-placeholder="Please edit" data-title="Please edit"
                                                class="editable editable-pre-wrapped editable-click" data-original-title=""
-                                               title="">{{election_year}}</a>
+                                               title="">{{election_year}}<span class="glyphicon glyphicon-pencil edit"></span></a>
                                     </td>
                                     <td data-contributor-name="{{contributor_name}}">
                                         <a href="javascript:void(0);" data-type="textarea" data-pk="1"
@@ -344,14 +362,14 @@ echo <<<EOT
                                         <span class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
                                     <td data-contribution-amount="{{contribution_amount}}">
-                                        <a href="javascript:void(0);" data-type="textarea" data-pk="1"
+                                        <a href="javascript:void(0);" data-type="text" data-pk="1"
                                                data-placeholder="Please edit" data-title="Please edit"
                                                class="editable editable-pre-wrapped editable-click" data-original-title=""
                                                title="">{{contribution_amount}}</a>
                                         <span class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
                                     <td data-contributor-type="{{contributor_type}}">
-                                        <a href="javascript:void(0);" data-type="textarea" data-pk="1"
+                                        <a href="javascript:void(0);" data-type="select" data-pk="1" data-source="{'Candidate Committee': 'Candidate Committee'}, {'Corporate': 'Corporate', 'Individual': 'Individual', 'Political Party': 'Political Party', 'Political Action Committee': 'Political Action Committee', 'Self': 'Self', 'Union': 'Union', 'Other': 'Other'}"
                                                data-placeholder="Please edit" data-title="Please edit"
                                                class="editable editable-pre-wrapped editable-click" data-original-title=""
                                                title="">{{contributor_type}}</a>
@@ -393,9 +411,9 @@ echo <<<EOT
                             <tr data-id="{{id}}">
                                 {{#this}}
                                     <td data-election-year="{{election_year}}">
-                                        <a data-type="textarea"
+                                        <a data-type="text"
                                                data-placeholder="Please edit" data-title="Please edit"
-                                               class="editable editable-pre-wrapped editable-click" data-original-title="">{{election_year}}</a>
+                                               class="editable editable-pre-wrapped editable-click" data-original-title="">{{election_year}}<span class="glyphicon glyphicon-pencil edit"></span></a>
                                     </td>
                                     <td data-name-of-endorser="{{name_of_endorser}}">
                                         <a href="javascript:void(0);" data-type="textarea"
@@ -404,8 +422,7 @@ echo <<<EOT
                                         <span class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
                                     <td data-endorser-type="{{endorser_type}}">
-                                        <a href="javascript:void(0);" data-type="textarea"
-                                               data-placeholder="Please edit" data-title="Please edit"
+                                        <a href="javascript:void(0);" data-type="select" data-pk="1" data-source="{'Elected Official': 'Elected Official', 'Organization': 'Organization', 'Political Party': 'Political Party', 'Union': 'Union', 'Other': 'Other'}" data-placeholder="Please edit" data-title="Please edit"
                                                class="editable editable-pre-wrapped editable-click" data-original-title="">{{endorser_type}}</a>
                                         <span class="glyphicon glyphicon-pencil edit"></span>
                                     </td>
@@ -445,10 +462,10 @@ echo <<<EOT
                         <tr data-id="{{id}}">
                             {{#this}}
                             <td data-date="{{date}}">
-                                <a href="javascript:void(0);" data-type="textarea" data-pk="1"
+                                <a href="javascript:void(0);" data-type="date" data-pk="1"
                                    data-placeholder="Please edit" data-title="Please edit"
-                                   class="editable editable-pre-wrapped editable-click" data-original-title=""
-                                   title="">{{date}}</a>
+                                   class="editable editable-pre-wrapped editable-click" data-original-title=""  data-format="mm/dd/yyyy"
+                                   title="">{{date}}<span class="glyphicon glyphicon-pencil edit"></span></a>
                             </td>
                             <td data-contributor-name="{{summary}}">
                                 <a href="javascript:void(0);" data-type="textarea" data-pk="1"
@@ -458,13 +475,18 @@ echo <<<EOT
                                 <span class="glyphicon glyphicon-pencil edit"></span>
                             </td>
                             <td data-url="{{url}}">
-                                <a href="javascript:void(0);" data-type="textarea" data-pk="1"
+                                <a href="javascript:void(0);" data-type="text" data-pk="1"
                                    data-placeholder="Please edit" data-title="Please edit"
                                    class="editable editable-pre-wrapped editable-click" data-original-title=""
                                    title="">{{url}}</a>
                                 <span class="glyphicon glyphicon-pencil edit"></span>
                             </td>
-                            <td data-issue-category="{{issue_category.name}}" data-no-editable>{{issue_category.name}}
+                            <td data-issue-category="{{issue_category.name}}">
+                                <a href="javascript:void(0);" data-type="select" data-pk="1" data-source="{{../../category_select}}"
+                                   data-placeholder="Please edit" data-title="Please edit"
+                                   class="editable editable-pre-wrapped editable-click" data-original-title=""
+                                   title="">{{issue_category.name}}</a>
+                                <span class="glyphicon glyphicon-pencil edit"></span>
                             </td>
                             {{/this}}
                         </tr>
@@ -667,36 +689,29 @@ echo <<<EOT
         </div>
     </div>
 
+    <div class="panel panel-danger notice">
+        <div class="panel-body">
+            <p class="text-center">If you would like to help us add information to complete this profile, or if you notice any information here that may be incorrect, please contact the Center at <a href="mailto:contact@californiapolicycenter.org">contact@californiapolicycenter.org</a></p>
+        </div>
+    </div>
 </script>
 
 <script id="row-addVotes" type="text//x-handlebars-template">
     <tr data-id style="background: rgba(80, 0, 0, 0.1)">
         <td data-date-considered="{{dateConsidered}}">
-            <span data-toggle="tooltip" data-placement="bottom" title="Log In/Sign Up" data-no-editable>
-                {{dateConsidered}}
-            </span>
+            {{dateConsidered}}
         </td>
-        <td data-name="{{name}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{name}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-name="{{name}}" data-no-editable>
+            {{name}}
         </td>
-        <td data-summary="{{summary}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{summary}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-summary="{{summary}}" data-no-editable>
+            {{summary}}
         </td>
-        <td data-vote="{{vote}}">
-            <span data-no-editable>
-                {{vote}}
-            </span>
+        <td data-vote="{{vote}}" data-no-editable>
+            {{vote}}
         </td>
-        <td align="center" date-did-elected-official-propose-this="{{didElectedOfficialProposeThis}}" data-no-editable>
-            {{didElectedOfficialProposeThis}}
+        <td align="center" data-did-elected-official-propose-this="{{#if did_elected_official_propose_this}}Yes{{else}}No{{/if}}" data-no-editable>
+            {{#if did_elected_official_propose_this}}Yes{{else}}No{{/if}}
         </td>
         <td data-issue-category="{{category}}" data-no-editable>{{category}}</td>
         <td data-no-editable>{{user}}</td>
@@ -705,32 +720,17 @@ echo <<<EOT
 
 <script id="row-addContributions" type="text//x-handlebars-template">
     <tr data-id style="background: rgba(80, 0, 0, 0.1)">
-        <td data-election-year="{{electionYear}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{electionYear}}</a>
+        <td data-election-year="{{electionYear}}" data-no-editable>
+            {{electionYear}}
         </td>
-        <td data-contributor-name="{{contributorName}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{contributorName}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-contributor-name="{{contributorName}}" data-no-editable>
+            {{contributorName}}
         </td>
-        <td data-independent-expenditure-desc="{{independentExpenditureDesc}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{independentExpenditureDesc}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-independent-expenditure-desc="{{independentExpenditureDesc}}" data-no-editable>
+            {{independentExpenditureDesc}}
         </td>
-        <td data-contribution-amount="{{contributionAmount}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{contributionAmount}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-contribution-amount="{{contributionAmount}}" data-no-editable>
+            {{contributionAmount}}
         </td>
         <td data-contributor-type="{{contributorType}}" data-no-editable=>
             {{contributorType}}
@@ -741,16 +741,11 @@ echo <<<EOT
 
 <script id="row-addEndorsements" type="text//x-handlebars-template">
     <tr data-id style="background: rgba(80, 0, 0, 0.1)">
-        <td data-election-year="{{electionYear}}">
-            <a data-type="textarea"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title="">{{electionYear}}</a>
+        <td data-election-year="{{electionYear}}" data-no-editable>
+            {{electionYear}}
         </td>
-        <td data-name-of-endorser="{{nameOfEndorser}}">
-            <a href="javascript:void(0);" data-type="textarea"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title="">{{nameOfEndorser}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-name-of-endorser="{{nameOfEndorser}}" data-no-editable>
+            {{nameOfEndorser}}
         </td>
         <td data-endorser-type="{{endorserType}}" data-no-editable>
             {{endorserType}}
@@ -761,25 +756,14 @@ echo <<<EOT
 
 <script id="row-addStatements" type="text//x-handlebars-template">
     <tr data-id style="background: rgba(80, 0, 0, 0.1)">
-        <td data-date="{{date}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{date}}</a>
+        <td data-date="{{date}}" data-no-editable>
+            {{date}}
         </td>
-        <td data-contributor-name="{{summary}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{summary}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-contributor-name="{{summary}}" data-no-editable>
+            {{summary}}
         </td>
-        <td data-url="{{url}}">
-            <a href="javascript:void(0);" data-type="textarea" data-pk="1"
-               data-placeholder="Please edit" data-title="Please edit"
-               class="editable editable-pre-wrapped editable-click" data-original-title=""
-               title="">{{url}}</a>
-            <span class="glyphicon glyphicon-pencil edit"></span>
+        <td data-url="{{url}}" data-no-editable>
+            {{url}}
         </td>
         <td data-url="{{category}}" data-no-editable="">
             {{category}}
@@ -795,7 +779,6 @@ echo <<<EOT
             <th>How Voted</th>
             <th>Sponsored by?</th>
         </tr>
-        {{#electedOfficials}}
         {{#this}}
             <tr data-elected="{{id}}" data-entity-type="electedOfficial">
                 <td>{{fullName}}</td>
@@ -823,7 +806,6 @@ echo <<<EOT
                 </td>
             </tr>
         {{/this}}
-        {{/electedOfficials}}
     </table>
 </script>
 
@@ -862,7 +844,19 @@ echo <<<EOT
             </div>
         </div>
         <div class="col-lg-7 col-md-6 col-sm-12">
-            <div id="intro-text"></div>
+            <div id="intro-text">
+                <h3 style="text-align:center;">Welcome to California Policy Center’s Civic Performance Profiles</h3>
+                <font size="3">
+                    <p>Is your local government giving you value for money? Use CPC’s Civic Performance Profiles to see how your city, county, school district or special district stacks up.</p>
+                    <p>Among the surprising facts we learned while compiling this database:</p>
+                    <ul>
+                        <li><a href="County/Los_Angeles">Los Angeles County</a> has unfunded retiree health liabilities of $26.7 billion.</li>
+                        <li>Median full time public employee salary and benefits in <a href="/City/San_Jose">San Jose</a> exceeds $157,000.</li>
+                        <li>The Superintendent of <a href="/School_District/New_Haven_Unified_School_District">New Haven Unified School District</a> in Alameda County received almost $650,000 in salary and benefits while the district’s Academic Performance Index is below the state median.</li>
+                    </ul>
+                    <p>To learn more about a California local government that affects you, please select it from the map or by typing its name.</p>
+                </font>
+            </div>
             <!--include right_panel.html-->
         </div>
     </div>
@@ -875,8 +869,7 @@ echo <<<EOT
                     <input type="hidden" name="City" value="1" class="type_filter">
                 </li>
                 <li class="list-group-item active counties-trigger"><span class="glyphicon glyphicon-ok"></span><i
-                    class="grey-line"></i><!--<span class="counties-title">-->Counties<!--</span>-->
-                    <input type="hidden" name="County" value="1"></li>
+                    class="grey-line"></i><!--<span class="counties-title">-->Counties<!--</span>--></li>
                 <li class="list-group-item active"><span class="glyphicon glyphicon-ok"></span><i
                     class="blue-circle marker-circle"></i>School Districts
                     <input type="hidden" name="School District" value="1" class="type_filter">
@@ -911,6 +904,347 @@ echo <<<EOT
     </div>
 </div>
 
+<!--
+
+    URL: /rank_order
+    Rank order page template.
+    Show sortable tables with governments ranks by alt type.
+
+-->
+<script id="rank-order-page" type="text/x-handlebars-template">
+
+    <div class="row person-info-header">
+        <div class="col-md-10 col-md-push-1">
+            <h5>RANK ORDER</h5>
+        </div>
+    </div>
+    <div class="row person-info-tabs">
+        <div class="col-md-10 col-md-push-1">
+
+            {{!-- Nav tabs --}}
+            <ul class="nav nav-pills" role="tablist">
+                <li role="presentation" class="active"><a href="#City" aria-controls="City" role="tab" data-toggle="tab">City</a></li>
+                <li role="presentation"><a href="#County" aria-controls="County" role="tab" data-toggle="tab">County</a></li>
+                <li role="presentation"><a href="#School_District" aria-controls="School District" role="tab" data-toggle="tab">School District</a></li>
+                <li role="presentation"><a href="#Special_District" aria-controls="Special District" role="tab" data-toggle="tab">Public Special District</a></li>
+            </ul>
+
+            <div class="tab-content" style="margin-top: 40px; margin-bottom: 40px;">
+
+                <div role="tabpanel" class="tab-pane active" id="City">
+
+                    {{> table-city}}
+
+                </div>
+
+                <div role="tabpanel" class="tab-pane" id="County">
+
+                    {{> table-county}}
+
+                </div>
+
+                <div role="tabpanel" class="tab-pane" id="School_District">
+
+                    {{> table-school-district }}
+
+                </div>
+
+                <div role="tabpanel" class="tab-pane" id="Special_District">
+
+                    {{> table-special-district }}
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</script>
+
+
+<script id="table-city" type="text/x-handlebars-template">
+
+    <div class="text-center"><nav><ul class="pagination"></ul></nav></div>
+
+    <div class="custom-wrap">
+
+        <div class="fixed-th-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each city.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each city.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../city.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td style="color: white">{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+
+        <div class="scrolled-td-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each city.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each city.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../city.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+    </div>
+
+</script>
+
+<script id="table-county" type="text/x-handlebars-template">
+
+    <div class="text-center"><nav><ul class="pagination"></ul></nav></div>
+
+    <div class="custom-wrap">
+
+        <div class="fixed-th-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each county.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each county.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../county.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+
+        <div class="scrolled-td-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each county.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each county.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../county.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+    </div>
+</script>
+
+<script id="table-school-district" type="text/x-handlebars-template">
+
+    <div class="text-center"><nav><ul class="pagination"></ul></nav></div>
+
+    <div class="custom-wrap">
+
+        <div class="fixed-th-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each school_district.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each school_district.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../school_district.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+
+        <div class="scrolled-td-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each school_district.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each school_district.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../school_district.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+    </div>
+
+</script>
+
+<script id="table-special-district" type="text/x-handlebars-template">
+
+    <div class="text-center"><nav><ul class="pagination"></ul></nav></div>
+
+    <div class="custom-wrap">
+
+        <div class="fixed-th-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each special_district.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each special_district.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../special_district.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+
+        <div class="scrolled-td-table-wrapper">
+
+            <table class="table table-bordered">
+                <tr>
+                    <th>&nbsp;</th>
+                    {{#each special_district.max_ranks}}
+                    <td><a class="rank_sort" href="javascript:void(0);" data-sort-type="{{this}}"><nobr>{{this}} <i class="icon"></i></nobr></a></td>
+                    {{/each}}
+                </tr>
+                {{#each special_district.governments as |entity|}}
+                <tr>
+                    <th>{{entity.name}}</th>
+                    {{#each ../special_district.max_ranks}}
+                    {{#if (some entity this) }}
+                    <td>{{getName this entity}}</td>
+                    {{else}}
+                    <td>&nbsp;</td>
+                    {{/if}}
+                    {{/each}}
+                </tr>
+                {{/each}}
+            </table>
+
+        </div>
+
+    </div>
+
+</script>
+
+<script id="rankPopover" type="text/x-handlebars-template">
+    <table class="table table-condensed table-hover">
+        <thead>
+            <tr>
+                <th data-sort-type="name_order" class="sortable"><nobr>{{alt_type}}<i class="icon"></i></nobr></th>
+                <th data-sort-type="order" class="sortable"><nobr>Rank<i class="icon"></i></nobr></th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{#data}}
+                <tr>
+                    <td>{{name}}</td>
+                    <td>
+                        {{#if value}}
+                            {{value}}
+                        {{else}}
+                            No data
+                        {{/if}}
+                    </td>
+                    <td>
+                        {{amount}}
+                    </td>
+                </tr>
+            {{/data}}
+        </tbody>
+    </table>
+    <div class="loader"></div>
+</script>
+
+<script id="additionalRows" type="text/x-handlebars-template">
+    {{#data}}
+    <tr>
+        <td>{{name}}</td>
+        <td>
+            {{#if value}}
+                {{value}}
+            {{else}}
+                No data
+            {{/if}}
+        </td>
+        <td>
+            {{amount}}
+        </td>
+    </tr>
+    {{/data}}
+</script>
+
     <div id="modal-window" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -918,33 +1252,36 @@ echo <<<EOT
         </div>
       </div>
     </div>
-    <script src="/legacy/js_files/jquery.min.js"></script>
-    <script src="/legacy/js/vendor/bootstrap.min.js"></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug-->
-    <script src="/legacy/js_files/ie10-viewport-bug-workaround.js"></script>
-    <script src="/legacy/js/plugins.js"></script>
-    <script src="/legacy/bower_components/flot/jquery.flot.js"></script>
-    <script src="/legacy/js/vendor/jquery.flot.stack.patched.js"></script>
-    <script src="/legacy/bower_components/flot/jquery.flot.pie.js"></script>
-    <script src="/legacy/bower_components/numeral/numeral.js"></script>
-    <script src="/legacy/bower_components/typeahead-0.10.5.js/dist/typeahead.bundle.min.js"></script>
-    <script src="/legacy/bower_components/handlebars/handlebars.min.js"></script>
     <script src="http://maps.google.com/maps/api/js?sensor=false"></script>
-    <script src="/legacy/bower_components/gmaps/gmaps.js"></script>
     <script src="http://www.google.com/jsapi"></script>
-    <script src="/legacy/js/vendor/markerwithlabel_packed.js"></script>
-    <script src="/legacy/js_files/disqus.js"></script>
-    <script src="/legacy/js/vendor/history.js"></script>
-    <script src="/legacy/js/vendor/cookies.js"></script>
-    <script src="/legacy/js/vendor/bootstrap-table/bootstrap-table.min.js"></script>
-    <script src="/legacy/js/vendor/bootstrap-table/extensions/multiple-sort/bootstrap-table-multiple-sort.min.js"></script>
-    <script src="/legacy/js/vendor/bootstrap-table/extensions/editable/bootstrap-table-editable.min.js"></script>
-    <link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css" rel="stylesheet">
+    <script src="/legacy/static/vendors.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+    <!--script(src='/legacy/js_files/jquery.min.js')-->
+    <!--script(src='/legacy/js/vendor/bootstrap.min.js')-->
+    <!--script(src='/legacy/js/vendor/moment.min.js')-->
+    <!--// IE10 viewport hack for Surface/desktop Windows 8 bug-->
+    <!--script(src='/legacy/js_files/ie10-viewport-bug-workaround.js')-->
+    <!--script(src='/legacy/js/plugins.js')-->
+    <!--script(src='/legacy/bower_components/flot/jquery.flot.js')-->
+    <!--script(src='/legacy/js/vendor/jquery.flot.stack.patched.js')-->
+    <!--script(src='/legacy/bower_components/flot/jquery.flot.pie.js')-->
+    <!--script(src='/legacy/bower_components/numeral/numeral.js')-->
+    <!--script(src='/legacy/bower_components/typeahead-0.10.5.js/dist/typeahead.bundle.min.js')-->
+    <!--script(src='/legacy/bower_components/handlebars/handlebars.min.js')-->
+    <!--script(src='/legacy/bower_components/gmaps/gmaps.js')-->
+    <script src="/legacy/js/vendor/markerwithlabel_packed.js"></script>
+    <!--script(src='/legacy/js_files/disqus.js')-->
+    <!--script(src='/legacy/js/vendor/history.js')-->
+    <!--script(src='/legacy/js/vendor/cookies.js')-->
+    <!--script(src='/legacy/js/vendor/bootstrap-table/bootstrap-table.min.js')-->
+    <!--script(src='/legacy/js/vendor/bootstrap-table/extensions/multiple-sort/bootstrap-table-multiple-sort.min.js')-->
+    <!--script(src='/legacy/js/vendor/bootstrap-table/extensions/editable/bootstrap-table-editable.min.js')-->
     <script src="{$view['assets']->getUrl('bundles/govwikifrontend/js/script.js')}"></script>
-    <script src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
-    <script src="/legacy/static/bundle.min.js"></script>
+    <!--script(src="/legacy/js/vendor/markerclusterer.js")-->
+    <script>google.load("visualization", "1", {packages: ["corechart"]});</script>
+    <script src="/legacy/static/bundle.js"></script>
   </body>
 </html>
 EOT;
 ?>
+

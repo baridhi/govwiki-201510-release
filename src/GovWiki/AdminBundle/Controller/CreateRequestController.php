@@ -98,7 +98,7 @@ class CreateRequestController extends Controller
         if (! $request->request->has('data')) {
             /*
              * If in request we don't get any data, ignore request and
-             * redirect back to create request show.
+             * redirect back to create request show page.
              */
             return new JsonResponse(
                 [
@@ -111,7 +111,6 @@ class CreateRequestController extends Controller
                 ]
             );
         }
-
 
         $this->persistData(
             $createRequest->getEntityName(),
@@ -130,7 +129,7 @@ class CreateRequestController extends Controller
              */
             $ids = [];
             foreach ($request->request->get('emailFlags') as $id => $isSend) {
-                if ($isSend) {
+                if ('true' === $isSend) {
                     $ids[] = $id;
                 }
             }
@@ -182,6 +181,12 @@ class CreateRequestController extends Controller
                 }
             }
         }
+
+        /*
+         * Update CreateRequest entity.
+         */
+        $createRequest->setFields($request->request->get('data'));
+        $em->persist($createRequest);
 
         $em->flush();
 
@@ -323,12 +328,12 @@ class CreateRequestController extends Controller
                      * Get association choices.
                      */
                     if (empty($associationCache[$association])) {
-                        $associationCache[$association] = $associationRepository->findAll();
-                        foreach ($associationCache[$association] as &$entity) {
+                        $tmp = $associationRepository->findAll();
+                        foreach ($tmp as $entity) {
                             if (method_exists($associationEntity, '__toString')) {
-                                $entity = (string) $entity;
+                                $associationCache[$association][$entity->getId()] = (string) $entity;
                             } else {
-                                $entity = 'Can\'t display name';
+                                $associationCache[$association][$entity->getId()] = 'Can\'t display name';
                             }
                         }
                     }

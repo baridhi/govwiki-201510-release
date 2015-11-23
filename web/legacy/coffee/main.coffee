@@ -17,21 +17,44 @@ gov_selector = null
 templates = new Templates2
 active_tab = ""
 undef = null
-authorized = false
 #
-# Information about current user.
-#
-user = Object.create null, {}
+# Now init in FrontendBundle main template.
+#authorized = false
+#user = Object.create null, {}
 #
 # Issues category, fill in elected official page.
 #
 categories = Object.create null, {}
+
+Handlebars.registerPartial 'table-city', $('#table-city').html()
+Handlebars.registerPartial 'table-county', $('#table-county').html()
+Handlebars.registerPartial 'table-school-district', $('#table-school-district').html()
+Handlebars.registerPartial 'table-special-district', $('#table-special-district').html()
+
+
+Handlebars.registerHelper 'getName', (name, obj) ->
+    return obj[name+'Rank'];
 
 Handlebars.registerHelper 'if_eq', (a, b, opts) ->
     if `a == b`
         return opts.fn this
     else
         return opts.inverse this
+
+Handlebars.registerHelper 'some', (arr, target, opts) ->
+    return !!arr[target+'Rank'];
+
+Handlebars.registerHelper 'debug', (emberObject) ->
+  if emberObject and emberObject.contexts
+    out = '';
+
+    for context in emberObject.contexts
+      for prop in context
+        out += prop + ": " + context[prop] + "\n"
+
+    if (console && console.log)
+        console.log("Debug\n----------------\n" + out)
+
 
 window.GOVWIKI =
     state_filter: ''
@@ -48,6 +71,9 @@ window.GOVWIKI =
         $('#searchIcon').show()
         $('#dataContainer').fadeIn(300)
         $('#searchContainer').hide()
+
+GOVWIKI.templates = templates;
+GOVWIKI.tplLoaded = false
 
 GOVWIKI.get_counties = get_counties = (callback) ->
     $.ajax
@@ -106,6 +132,7 @@ GOVWIKI.draw_polygons = draw_polygons = (countiesJSON) ->
                             $('.loader').hide()
                             $('#details').show()
                             $('#searchIcon').show()
+                            GOVWIKI.tplLoaded = true
                             window.history.pushState {template: compiled_gov_template}, 'CPC Civic Profiles', uri
             })
 
@@ -152,6 +179,7 @@ activate_tab = () ->
 
 
 get_record2 = (recid) ->
+    console.log('!!@#@');
 # clear wikipedia place
     $("#wikipediaContainer").html("")
     $.ajax
@@ -298,7 +326,7 @@ GOVWIKI.history = (index) ->
     if index == 0
         searchContainer = $('#searchContainer').text();
         if(searchContainer != '')
-            window.history.pushState {}, 'CPC Civic Profiles', '/'
+#            window.history.pushState {}, 'CPC Civic Profiles', '/'
             $('#searchIcon').hide()
             $('#stantonIcon').hide()
         else
@@ -315,15 +343,21 @@ GOVWIKI.history = (index) ->
 window.addEventListener 'popstate', (event) ->
     console.log(window.history.state)
     if window.history.state isnt null
-        $('#details').html event.state.template
-        route = document.location.pathname.split('/').length-1;
-        if route is 2 then $('#stantonIcon').hide()
-        if route is 1 then $('#searchContainer').show()
-        GOVWIKI.show_data_page()
+        route = document.location.pathname.split('/').filter((itm)-> if itm isnt "" then itm else false);
+        route = route.length;
+
+        console.log(route)
+        if route is 0
+          GOVWIKI.show_search_page()
+
+        if route is 2
+          $('#stantonIcon').hide();
+        if route isnt 0
+          $('#details').html event.state.template
+          GOVWIKI.show_data_page()
     else
         GOVWIKI.show_search_page()
-#    else
-#        document.location.reload()
+        if GOVWIKI.tplLoaded is false then document.location.reload()
 
 # Refresh Disqus thread
 refresh_disqus = (newIdentifier, newUrl, newTitle) ->
@@ -411,7 +445,7 @@ sortTable = (table, colNum) ->
         $(table).children('tbody').append(row)
     $(table).children('tbody').append(lastRow)
 
-initTableHandlers = (person) ->
+initTableHandlers = (person, categories, electedOfficials) ->
     $('[data-toggle="tooltip"]').tooltip()
 
     $('.editable').editable({stylesheets: false,type: 'textarea', showbuttons: 'bottom', display: true, emptytext: ' '})
@@ -426,20 +460,6 @@ initTableHandlers = (person) ->
           window.sessionStorage.setItem('tableType', $(e.target).closest('.tab-pane')[0].id)
           window.sessionStorage.setItem('dataId', $(e.currentTarget).closest('tr').attr('data-id'))
           window.sessionStorage.setItem('field', Number(($(e.currentTarget).closest('td'))[0].cellIndex) + 1)
-#            $.ajax '/editrequest/new', {
-#                method: 'POST',
-#                complete: (response) ->
-#                    if response.status is 401
-#
-#                    else if response.status is 200
-#                        authorized = true
-#                        $(e.currentTarget).closest('td').find('.editable').editable('toggle');
-#                error: (error) ->
-#                    if error.status is 401
-#                        showModal('/login')
-#                        window.sessionStorage.setItem('target', e.target)
-#                        window.sessionStorage.setItem('tableType', $(e.target).closest('.tab-pane')[0].id)
-#            }
         else
             $(e.currentTarget).closest('td').find('.editable').editable('toggle');
 
@@ -476,6 +496,14 @@ initTableHandlers = (person) ->
         entityType = $(e.currentTarget).closest('table')[0].dataset.entityType
         id = $(e.currentTarget).closest('tr')[0].dataset.id
         field = Object.keys($(e.currentTarget).closest('td')[0].dataset)[0]
+
+        if field is 'vote' or field is 'didElectedOfficialProposeThis'
+          ###
+            Current field owned by ElectedOfficialVote
+          ###
+          entityType = 'ElectedOfficialVote'
+          id = $(e.currentTarget).parent().find('span')[0].dataset.id
+
         sendObject = {
             editRequest: {
                 entityName: entityType,
@@ -483,9 +511,9 @@ initTableHandlers = (person) ->
                 changes: {}
             }
         }
+        console.log sendObject
         sendObject.editRequest.changes[field] = params.newValue
         sendObject.editRequest = JSON.stringify(sendObject.editRequest);
-        console.log sendObject
         $.ajax '/editrequest/create', {
             method: 'POST',
             data: sendObject,
@@ -540,14 +568,21 @@ initTableHandlers = (person) ->
                     urlContent.find('.url-content-body').text('')
                     urlContent.find('.url-content-img').attr('src', '')
 
+                    #
+                    # Set title.
                     urlContent.find('.url-content-title').text(response.data.title)
 
                     if (response.type is 'html')
-                      urlContent.find('.url-content-body').text(response.data.body);
+                      #
+                      # If url point to html, hide img and set body.
+                      urlContent.find('.url-content-img').hide()
+                      urlContent.find('.url-content-body').text(response.data.body)
                     if (response.type is 'youtube')
-                      urlContent.find('.url-content-img').attr('src', response.data.preview);
+                      #
+                      # If url point to youtube, show youtube preview image.
+                      urlContent.find('.url-content-img').attr('src', response.data.preview)
                     if (response.type is 'image')
-                      urlContent.find('.url-content-img').attr('src', response.data.preview);
+                      urlContent.find('.url-content-img').attr('src', response.data.preview)
                     urlContent.slideDown()
                   error: (error) ->
                     console.log error
@@ -564,68 +599,49 @@ initTableHandlers = (person) ->
                     urlContent.slideDown();
                 }
 
+        insertCategories = (select) ->
+          endObj = {}
+          categories.forEach (item) ->
+            endObj[item.id] = item.name
+          select.setAttribute('name', 'issueCategory')
+          # Add first blank option.
+          option = document.createElement('option')
+          option.setAttribute('value', '')
+          option.textContent = ''
+          select.innerHTML += option.outerHTML
+          for key of endObj
+              option = document.createElement('option')
+              option.setAttribute('value', key)
+              option.textContent = endObj[key]
+              select.innerHTML += option.outerHTML
+
         if tabPane.hasClass('loaded') then return false
         tabPane[0].classList.add('loaded')
 
-        personMeta = {"createRequest":{"entityName":currentEntity,"knownFields":{"electedOfficial":person.id}}}
-        $.ajax(
-            method: 'POST',
-            url: '/api/createrequest/new',
-            data: personMeta,
-            success: (data) ->
-                console.log(data);
+        if currentEntity is 'Endorsement'
 
-                endObj = {}
-                data.choices[0].choices.forEach (item, index) ->
-                  ids = Object.keys item
-                  ids.forEach (id) ->
-                      endObj[id] = item[id]
+        else if currentEntity is 'Contribution'
 
-                insertCategories = () ->
-                    select.setAttribute('name', data.choices[0].name)
-                    # Add first blank option.
-                    option = document.createElement('option')
-                    option.setAttribute('value', '')
-                    option.textContent = ''
-                    select.innerHTML += option.outerHTML
-                    for key of endObj
-                        option = document.createElement('option')
-                        option.setAttribute('value', key)
-                        option.textContent = endObj[key]
-                        select.innerHTML += option.outerHTML
+        else if currentEntity is 'Legislation'
+            insertCategories($('#addVotes select')[0])
+            $('#addVotes').find('[data-provide="datepicker"]').on(
+              'changeDate',
+              () ->
+                $(this).datepicker 'hide'
+            )
+            #
+            # Fill elected officials votes table.
+            #
+            compiledTemplate = Handlebars.compile($('#legislation-vote').html())
+            $('#electedVotes').html compiledTemplate(electedOfficials);
 
-                select = null
-
-                if currentEntity is 'Endorsement'
-
-                else if currentEntity is 'Contribution'
-
-                else if currentEntity is 'Legislation'
-                    select = $('#addVotes select')[0]
-                    insertCategories()
-                    $('#addVotes').find('[data-provide="datepicker"]').on(
-                      'changeDate',
-                      () ->
-                        $(this).datepicker 'hide'
-                    )
-                    #
-                    # Fill elected officials votes table.
-                    #
-                    compiledTemplate = Handlebars.compile($('#legislation-vote').html())
-                    $('#electedVotes').html compiledTemplate(data);
-
-                else if currentEntity is 'PublicStatement'
-                    select = $('#addStatements select')[0]
-                    insertCategories()
-                    $('#addStatements').find('[data-provide="datepicker"]').on(
-                      'changeDate',
-                      () ->
-                        $(this).datepicker 'hide'
-                    )
-
-            error: (error) ->
-                if(error.status == 401) then showModal('/login')
-        );
+        else if currentEntity is 'PublicStatement'
+            insertCategories($('#addStatements select')[0])
+            $('#addStatements').find('[data-provide="datepicker"]').on(
+              'changeDate',
+              () ->
+                $(this).datepicker 'hide'
+            )
 
     window.addItem = (e) ->
         newRecord = {}
@@ -651,6 +667,8 @@ initTableHandlers = (person) ->
         associations = {}
         if modalType != 'addVotes'
             associations["electedOfficial"] = person.id
+        else
+            associations["government"] = person.government.id
         #
         # Array of sub entities.
         #
@@ -762,6 +780,8 @@ initTableHandlers = (person) ->
           data[key] = value
         data['user'] = user.username
 
+        console.log person
+
         if modalType is 'addVotes'
             ###
               Check if user specified how current elected official voted.
@@ -817,31 +837,25 @@ initTableHandlers = (person) ->
         show him login/sign up window. After authorizing user redirect back
         to page, where he pres add/edit button. In that case we show him appropriate
         modal window.
-
-        Timeout need because we don't know when we get user information and elected official information.
     ###
-    window.setTimeout( () ->
-      if (!authorized)
-        return
+    if (!authorized)
+      return
 
-      type = window.sessionStorage.getItem('tableType')
-      dataId = window.sessionStorage.getItem('dataId')
-      field = window.sessionStorage.getItem('field')
+    type = window.sessionStorage.getItem('tableType')
+    dataId = window.sessionStorage.getItem('dataId')
+    field = window.sessionStorage.getItem('field')
 
-      if (dataId && field)
-        $('a[aria-controls="' + type + '"]').click()
-        $('tr[data-id='+dataId+']').find('td:nth-child('+field+')').find('.editable').editable('toggle');
-        window.sessionStorage.setItem('tableType', '')
-        window.sessionStorage.setItem('dataId', '')
-        window.sessionStorage.setItem('field', '')
+    if (dataId && field)
+      $('a[aria-controls="' + type + '"]').click()
+      $('tr[data-id='+dataId+']').find('td:nth-child('+field+')').find('.editable').editable('toggle');
+      window.sessionStorage.setItem('tableType', '')
+      window.sessionStorage.setItem('dataId', '')
+      window.sessionStorage.setItem('field', '')
 
-      else if (type)
-        $('div#' + type).find('.add').click()
-        $('a[aria-controls="' + type + '"]').click()
-        window.sessionStorage.setItem('tableType', '')
-    ,
-    2000
-    )
+    else if (type)
+      $('div#' + type).find('.add').click()
+      $('a[aria-controls="' + type + '"]').click()
+      window.sessionStorage.setItem('tableType', '')
 
 
 ###
@@ -889,6 +903,144 @@ showCreateRequests = (person, createRequests) ->
 
         $("\##{name} tr:last-child").before(template(data))
 
+
+$('#dataContainer').popover({
+    placement: 'bottom'
+    selector: '.rank'
+    animation: true
+    template: '<div class="popover" role="tooltip">
+                    <div class="arrow"></div>
+                    <div class="popover-title-custom">
+                        <h3 class="popover-title"></h3>
+                    </div>
+                    <div class="popover-content"></div>
+                </div>'
+});
+
+Handlebars.registerHelper 'if_eq', (a, b, opts) ->
+    if(a == b)
+        return opts.fn this
+    else
+        return opts.inverse this
+
+Handlebars.registerHelper 'concat', (param1, param2) ->
+    temp = [param1, param2]
+    return temp.join('')
+
+$('#dataContainer').on 'click', (e) ->
+    $element = $(e.target);
+    popoverContent = $element.parent().find('.popover-content')
+    fieldName = $element.attr('data-field')
+    mask = $element.attr('data-mask')
+    popoverTpl = $('#rankPopover').html()
+    additionalRowsTpl = $('#additionalRows').html()
+    preloader = popoverContent.find('loader')
+
+    previousScrollTop = 0;
+    currentPage = 0;
+    loading = false;
+    popoverOrder = null;
+    popoverNameOrder = null;
+
+    # Close all other popovers
+    if !$element.closest('.popover')[0]
+        $('.rank').not(e.target).popover('destroy')
+
+    formatData = (data) ->
+        if mask
+            data.data.forEach (rank) ->
+                rank.amount = numeral(rank.amount).format(mask)
+
+    loadNewRows = () ->
+        loading = true;
+        preloader.show()
+        table = popoverContent.find('table tbody')
+        table.html ''
+        currentPage = 0
+        previousScrollTop = 0
+        fieldNameInCamelCase = fieldName.replace /_([a-z0-9])/g, (g) -> return g[1].toUpperCase()
+        $.ajax
+            url: '/api/government'+window.location.pathname+'/get_ranks'
+            dataType: 'json',
+            data:
+                page: currentPage
+                order: popoverOrder
+                name_order: popoverNameOrder
+                field_name: fieldNameInCamelCase # Transform to camelCase
+            success: (data) ->
+                formatData(data)
+                compiledTemplate = Handlebars.compile(additionalRowsTpl)
+                table.html compiledTemplate(data)
+                loading = false;
+                preloader.hide()
+
+    # Sort table in popover
+    popoverContent.on 'click', 'th', (e) ->
+        $column = `$(e.target).hasClass('sortable') ? $(e.target) : $(e.target).closest('th');`
+        if $column.hasClass('sortable')
+            if $column.hasClass('desc')
+                if $column.attr('data-sort-type') is 'name_order'
+                    popoverNameOrder = ''
+                else
+                    popoverOrder = ''
+                loadNewRows()
+                $column.removeClass('desc').removeClass('asc')
+                $column.find('i').removeClass('icon__bottom').removeClass('icon__top')
+            else if $column.hasClass('asc')
+                if $column.attr('data-sort-type') is 'name_order'
+                    popoverNameOrder = 'desc'
+                else
+                    popoverOrder = 'desc'
+                loadNewRows()
+                $column.removeClass('asc').addClass('desc')
+                $column.find('i').removeClass('icon__top').addClass('icon__bottom')
+            else
+                if $column.attr('data-sort-type') is 'name_order'
+                    popoverNameOrder = 'asc'
+                else
+                    popoverOrder = 'asc'
+                loadNewRows()
+                $column.addClass('asc')
+                $column.find('i').addClass('icon__top')
+
+    # Render table and insert into popover-content
+    if fieldName
+        fieldNameInCamelCase = fieldName.replace /_([a-z0-9])/g, (g) -> return g[1].toUpperCase()
+        $.ajax
+            url: '/api/government'+window.location.pathname+'/get_ranks'
+            dataType: 'json',
+            data:
+                field_name: fieldNameInCamelCase # Transform to camelCase
+            success: (data) ->
+                formatData(data)
+                compiledTemplate = Handlebars.compile(popoverTpl)
+                popoverContent.html compiledTemplate(data)
+
+    # Lazy load for popover
+    popoverContent.scroll () ->
+      currentScrollTop = popoverContent.scrollTop()
+      if  previousScrollTop < currentScrollTop && currentScrollTop > 0.5 * popoverContent[0].scrollHeight
+        console.log('asdasd');
+        previousScrollTop = currentScrollTop
+        if loading is false
+          loading = true
+          preloader.show();
+          $.ajax
+              url: '/api/government' + window.location.pathname + '/get_ranks'
+              dataType: 'json',
+              data:
+                  page: ++currentPage
+                  order: popoverOrder
+                  name_order: popoverNameOrder
+                  field_name: fieldNameInCamelCase # Transform to camelCase
+              success: (data) ->
+                  formatData(data)
+                  loading = false
+                  preloader.hide()
+                  compiledTemplate = Handlebars.compile(additionalRowsTpl)
+                  popoverContent.find('table tbody')[0].innerHTML += compiledTemplate(data)
+                  console.log data
+
 $('#dataContainer').on 'click', '.elected_link', (e) ->
     e.preventDefault();
     url = e.currentTarget.pathname
@@ -910,6 +1062,8 @@ $('#dataContainer').on 'click', '.elected_link', (e) ->
                     person = data.person
                     createRequests = data.createRequests
                     categories = data.categories
+                    person.categories = data.categories
+                    person.gov_alt_name = person.government.slug.replace(/_/g, ' ')
 
                     ###
                       Format contribution amount.
@@ -927,21 +1081,21 @@ $('#dataContainer').on 'click', '.elected_link', (e) ->
                         $('#dataContainer').show()
                         return false;
 
-                    format = {year: 'numeric', month: 'numeric', day: 'numeric'};
                     person.votes.forEach (item, itemList) ->
-                        date = new Date item.legislation.date_considered;
-                        item.legislation.date_considered = date.toLocaleString 'en-US', format
+                        date = moment(item.legislation.date_considered, 'YYYY-MM-DD');
+                        item.legislation.date_considered = date.format 'L'
 
                     tpl = $('#person-info-template').html()
                     compiledTemplate = Handlebars.compile(tpl)
                     $('.loader').hide()
                     $('#details').show()
                     html = compiledTemplate(person)
+                    GOVWIKI.tplLoaded = true
                     window.history.pushState {template: html}, 'CPC Politician Profiles', url
                     $('#details').html html
                     $('#dataContainer').css('display': 'block');
 
-                    initTableHandlers(person);
+                    initTableHandlers(person, categories, data.electedOfficials);
                     showCreateRequests(person, createRequests);
 
                     $('.vote').on 'click', (e) ->
@@ -983,6 +1137,7 @@ if routeType is 0
                         $('.loader').hide()
                         $('#details').show()
                         compiled_gov_template = templates.get_html(0, govs)
+                        GOVWIKI.tplLoaded = true
                         window.history.pushState {template: compiled_gov_template}, 'CPC Civic Profiles', url
                         $('#details').html compiled_gov_template
                         activate_tab()
@@ -992,9 +1147,12 @@ if routeType is 0
     if !undef
         $('#searchContainer').html $('#search-container-template').html()
         # Load introductory text from texts/intro-text.html to #intro-text container.
-        $.get "/legacy/texts/intro-text.html", (data) -> $("#intro-text").html data
+        #$.get "/legacy/texts/intro-text.html", (data) -> $("#intro-text").html data
+        #$("#intro-text").html $("#intro")
         govmap = require './govmap.coffee'
         get_counties GOVWIKI.draw_polygons
+        GOVWIKI.tplLoaded = true
+        window.history.pushState {template: $('#searchContainer').html()}, 'CPC Civic Profiles', '/'
         undef = true
         $('.loader').hide()
     adjust_typeahead_width()
@@ -1021,7 +1179,180 @@ if routeType is 0
                 $('.loader').hide()
                 $('#details').show()
                 $('#searchIcon').show()
+                GOVWIKI.tplLoaded = true
                 window.history.pushState {template: compiled_gov_template}, 'CPC Civic Profiles', uri
+
+# Route /rank_order
+if routeType is 1
+    document.title = 'CPC Civic Profiles'
+    $('#details').hide()
+    $('#dataContainer').show()
+    $('.loader').show()
+    $('#wikipediaContainer').hide()
+    $('#stantonIcon').hide()
+
+    orderedFields = []
+
+    #
+    # Set sort callback.
+    #
+    $(document).on 'click', '.rank_sort', (e) ->
+      $('#details').hide()
+      $('#dataContainer').show()
+      $('.loader').show()
+      $('#wikipediaContainer').hide()
+      $('#stantonIcon').hide()
+
+      column = $(e.currentTarget)
+      tabPanel = column.closest('.tab-pane')
+      fieldName = column.attr('data-sort-type')
+      icon = column.find('i')
+
+      if icon.hasClass('icon__top')
+        #
+        # Sort in descending order.
+        #
+        icon.addClass('icon__bottom').removeClass('icon__top')
+        orderedFields[fieldName] = 'desc'
+      else if icon.hasClass('icon__bottom')
+        #
+        # Remove sort by this field.
+        #
+        icon.removeClass('icon__bottom')
+        delete orderedFields[fieldName]
+      else
+        #
+        # Sort in ascending order.
+        #
+        icon.addClass('icon__top')
+        orderedFields[fieldName] = 'asc'
+
+      $.ajax
+        url: "/api/rank_order"
+        dataType: 'json'
+        data:
+          alt_type: tabPanel.attr('id')
+          fields_order: $.extend({}, orderedFields)
+        cache: true
+        success: (data) ->
+          console.log data
+
+          #
+          # Update table
+          #
+          table = tabPanel.find('table')
+          head = table.find('tr:first')
+
+          $('.loader').hide()
+          $('#details').show()
+          GOVWIKI.show_data_page();
+
+          #
+          # Push template.
+          #
+          GOVWIKI.tplLoaded = true
+          window.history.pushState {template: $('#details').html()}, 'CPC Civic Profiles', '/rank_order'
+
+    altTypesData = {}
+    GOVWIKI.currentAltType = 'City'
+    GOVWIKI.currentAltTypeLowerCase = 'city'
+    GOVWIKI.itemsPerPage = 10;
+    GOVWIKI.currentPage = 0;
+
+    setEvents = () ->
+        $('a[data-toggle="tab"]').on 'shown.bs.tab', (e) ->
+            GOVWIKI.currentAltType = $(e.target).attr("href").replace('#', '')
+            GOVWIKI.currentAltTypeLowerCase = GOVWIKI.currentAltType.toLowerCase()
+            GOVWIKI.currentPage = 0;
+            renderPagination()
+
+        $('.pagination').on 'click', 'a', (e) ->
+            page = $(e.target).attr('data-page')
+            if page isnt undefined
+                GOVWIKI.currentPage = parseInt(page)-1
+                renderTemplate(GOVWIKI.currentPage)
+
+    renderPagination = () ->
+        $paginationContainer = $('#'+GOVWIKI.currentAltType+' .pagination')
+        $paginationContainer.html('')
+        paginationControls = ''
+        if GOVWIKI.currentPage > 0
+            paginationControls += '<li><a href="javascript:void(0)" aria-label="Previous" onclick="GOVWIKI.prevPage(event)"><span aria-hidden="true">&laquo;</span></a></li>'
+            paginationControls += '<li><a href="javascript:void(0)" data-page="'+GOVWIKI.currentPage+'">' + (GOVWIKI.currentPage) + '</a></li>'
+        else
+            paginationControls += '<li class="disabled"><a href="javascript:void(0)" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a></li>'
+
+        paginationControls += '<li class="active"><a href="javascript:void(0)" data-page="'+(GOVWIKI.currentPage+1)+'">' + (GOVWIKI.currentPage+1) + '</a></li>'
+
+        if GOVWIKI.currentPage is GOVWIKI.lastPage()
+            paginationControls += '<li class="disabled"><a href="javascript:void(0)" aria-label="Next"><span aria-hidden="true">&raquo;</span></a></li>'
+        else
+            paginationControls += '<li><a href="javascript:void(0)" data-page="'+(GOVWIKI.currentPage+2)+'">' + (GOVWIKI.currentPage+2) + '</a></li>'
+            paginationControls += '<li><a href="javascript:void(0)" aria-label="Next" onclick="GOVWIKI.nextPage(event)"><span aria-hidden="true">&raquo;</span></a></li>'
+        $paginationContainer.append(paginationControls);
+
+    $.ajax
+        url: "/api/rank_order"
+        dataType: 'json'
+        cache: true
+        success: (data) ->
+            altTypesData = data;
+            #
+            # Render rank order template.
+            #
+            tpl = Handlebars.compile($('#rank-order-page').html())
+            $('#details').html tpl(altTypesData)
+            $('.loader').hide()
+            $('#details').show()
+            GOVWIKI.show_data_page();
+
+            setEvents()
+            renderPagination()
+
+            #
+            # Push template.
+            #
+            GOVWIKI.tplLoaded = true
+#            window.history.pushState {template: tpl}, 'CPC Civic Profiles', '/rank_order'
+
+    renderTemplate = (page) ->
+        $.ajax
+            url: "/api/rank_order"
+            dataType: 'json'
+            cache: true
+            data:
+                alt_type: GOVWIKI.currentAltType
+                page: page || GOVWIKI.currentPage
+                limit: GOVWIKI.itemsPerPage
+            success: (data) ->
+                altTypesData[GOVWIKI.currentAltTypeLowerCase] = data
+
+                tpl = Handlebars.compile($('#table-'+GOVWIKI.currentAltTypeLowerCase.replace(/_/, '-')).html())
+                $('#'+GOVWIKI.currentAltType).html tpl(altTypesData)
+                setEvents()
+                renderPagination()
+
+    GOVWIKI.nextPage = (e) ->
+        ++GOVWIKI.currentPage
+        renderTemplate()
+
+
+    GOVWIKI.prevPage = (e) ->
+        --GOVWIKI.currentPage
+        renderTemplate()
+
+
+    GOVWIKI.firstPage =  () ->
+        return `GOVWIKI.currentPage == 0`
+
+    GOVWIKI.lastPage =  () ->
+        lastPage = Math.ceil(altTypesData.count / GOVWIKI.itemsPerPage - 1)
+        return GOVWIKI.currentPage == lastPage
+
+    GOVWIKI.numberOfPages = () ->
+        return Math.ceil(altTypesData.count / GOVWIKI.itemsPerPage)
+    
+
 
 # Route /:alt_name/:city_name
 if routeType is 2
@@ -1037,19 +1368,23 @@ if routeType is 2
         url: "/api/government" + window.path,
         dataType: 'json'
         cache: true
-        success: (elected_officials_data) ->
-            govs = elected_officials_data
+        success: (govs) ->
+
             $('.loader').hide()
             $('#details').show()
-            $('#details').html templates.get_html(0, govs)
+            run = templates.get_html(0, govs)
+            $('#details').html run
             activate_tab()
             GOVWIKI.show_data_page()
+            GOVWIKI.tplLoaded = true
+            window.history.pushState {template: run}, 'CPC Civic Profiles', window.path
         error: (e) ->
             console.log e
 
     $('#btnBackToSearch').click (e)->
         e.preventDefault()
         GOVWIKI.show_search_page()
+
 
 # Route /:alt_name/:city_name/:elected_name
 if routeType is 3
@@ -1069,6 +1404,19 @@ if routeType is 3
             person = data.person
             createRequests = data.createRequests
             categories = data.categories
+            person.category_select = []
+            person.gov_alt_name = person.government.slug.replace(/_/g, ' ')
+            console.log data
+
+            ###
+              Prepare options for select in IssuesCategory edit.
+            ###
+            for category in categories
+              person.category_select.push {
+                value: category.id
+                text: category.name
+              }
+            person.category_select = JSON.stringify(person.category_select);
 
             ###
               Format contribution amount.
@@ -1076,7 +1424,7 @@ if routeType is 3
             for contribution in person.contributions
                 contribution.contribution_amount = numeral(contribution.contribution_amount).format('0,000')
 
-            console.log data
+            console.log person
 
             if $.isEmptyObject(person)
                 $('.loader').hide()
@@ -1086,11 +1434,10 @@ if routeType is 3
                 $('#dataContainer').show()
                 return false;
 
-            format = {year: 'numeric', month: 'numeric', day: 'numeric'};
             if person.votes != undefined
                 person.votes.forEach (item, itemList) ->
-                    date = new Date item.legislation.date_considered;
-                    item.legislation.date_considered = date.toLocaleString 'en-US', format
+                    date = moment(item.legislation.date_considered, 'YYYY-MM-DD');
+                    item.legislation.date_considered = date.format 'L'
 
             tpl = $('#person-info-template').html()
             compiledTemplate = Handlebars.compile(tpl)
@@ -1103,7 +1450,7 @@ if routeType is 3
 
             $('#dataContainer').css('display': 'block');
 
-            initTableHandlers(person);
+            initTableHandlers(person, categories, data.electedOfficials);
             showCreateRequests(person, createRequests);
 
             $('.vote').on 'click', (e) ->
@@ -1114,7 +1461,6 @@ if routeType is 3
                 $('#myModalLabel').text(name + ' (' + person.gov_alt_name + ')');
                 $('#conversation').modal 'show'
                 refresh_disqus id, 'http://govwiki.us' + '/' + id, name
-
             $('#stantonIcon a').text 'Return to ' + person.gov_alt_name
             window.DISQUSWIDGETS.getCount()
 
@@ -1122,25 +1468,38 @@ if routeType is 3
             console.log e
 
 $ ->
-  ###
-    Get current user.
-  ###
-  $userBtn = $('#user')
-  $userBtnLink = $userBtn.find('a');
-  $.ajax '/api/user', {
-    method: 'GET',
-    async: false,
-    success: (response) ->
-      user.username = response.username;
-      authorized = true;
+    ###
+      Get current user.
+    ###
+    $userBtn = $('#user')
+    $userBtnLink = $userBtn.find('a');
+    console.log authorized
+    console.log user
+    console.log user.username
 
+    if (authorized)
       $userText = $('#user-text').find('a');
       $userText.html("Logged in as #{user.username}" + $userText.html())
       $userBtnLink.html("Sign Out" + $userBtnLink.html()).click () ->
-        window.location = '/logout'
-
-    error: (error) ->
-      if error.status is 401 then authorized = false
+          window.location = '/logout'
+    else
       $userBtnLink.html("Login / Sign Up" + $userBtnLink.html()).click () ->
         showModal('/login')
-  }
+
+#    $.ajax '/api/user', {
+#          method: 'GET',
+#          async: false,
+#          success: (response) ->
+#              user.username = response.username;
+#              authorized = true;
+#
+#              $userText = $('#user-text').find('a');
+#              $userText.html("Logged in as #{user.username}" + $userText.html())
+#              $userBtnLink.html("Sign Out" + $userBtnLink.html()).click () ->
+#                  window.location = '/logout'
+#
+#          error: (error) ->
+#              if error.status is 401 then authorized = false
+#              $userBtnLink.html("Login / Sign Up" + $userBtnLink.html()).click () ->
+#                  showModal('/login')
+#      }

@@ -5,6 +5,7 @@ namespace GovWiki\DbBundle\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation\ExclusionPolicy;
 use JMS\Serializer\Annotation\Exclude;
+use JMS\Serializer\Annotation\Groups;
 use JMS\Serializer\Annotation\VirtualProperty;
 
 /**
@@ -22,12 +23,15 @@ class ElectedOfficial
      * @ORM\Column(name="id", type="integer")
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="AUTO")
+     * @Groups({"government", "elected_official"})
      */
     private $id;
 
     /**
+     * @var Government
+     *
      * @ORM\ManyToOne(targetEntity="Government", inversedBy="electedOfficials")
-     * @Exclude
+     * @Groups({"elected_official"})
      */
     private $government;
 
@@ -35,6 +39,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="full_name", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $fullName;
 
@@ -42,6 +47,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="slug", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $slug;
 
@@ -49,6 +55,7 @@ class ElectedOfficial
      * @var integer
      *
      * @ORM\Column(name="display_order", type="integer", nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $displayOrder;
 
@@ -56,6 +63,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="title", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $title;
 
@@ -63,6 +71,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="email_address", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $emailAddress;
 
@@ -70,6 +79,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="telephone_number", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $telephoneNumber;
 
@@ -77,6 +87,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="photo_url", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $photoUrl;
 
@@ -84,6 +95,7 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="bio_url", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $bioUrl;
 
@@ -91,26 +103,31 @@ class ElectedOfficial
      * @var string
      *
      * @ORM\Column(name="term_expires", type="string", length=255, nullable=true)
+     * @Groups({"government", "elected_official"})
      */
     private $termExpires;
 
     /**
      * @ORM\OneToMany(targetEntity="Contribution", mappedBy="electedOfficial")
+     * @Groups({"elected_official"})
      */
     private $contributions;
 
     /**
      * @ORM\OneToMany(targetEntity="Endorsement", mappedBy="electedOfficial")
+     * @Groups({"elected_official"})
      */
     private $endorsements;
 
     /**
      * @ORM\OneToMany(targetEntity="PublicStatement", mappedBy="electedOfficial")
+     * @Groups({"elected_official"})
      */
     private $publicStatements;
 
     /**
      * @ORM\OneToMany(targetEntity="ElectedOfficialVote", mappedBy="electedOfficial")
+     * @Groups({"elected_official"})
      */
     private $votes;
 

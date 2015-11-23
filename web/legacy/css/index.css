@@ -48,20 +48,19 @@
 }
 .sugg-box {
   position: relative;
-  border-bottom: 0px solid #eee;
+  border-bottom: 0 solid #eee;
 /*min-height: 60px;*/
   overflow: hidden;
 }
 .sugg-state {
 /*width: 70px;*/
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
   margin-right: 20px;
   float: left;
   z-index: 0;
 /*position: absolute;*/
   font-size: 18px;
-  color: #ddd;
   color: #337ab7;
 /*#59e;*/
   font-weight: bold;
@@ -82,7 +81,7 @@
   float: right;
 /*position: absolute;*/
   top: 36px;
-  right: 0px;
+  right: 0;
   line-height: 100%;
 }
 /*width: 70px;*/
@@ -92,7 +91,6 @@
   color: #666;
   text-align: left;
   margin-right: 5px;
-  text-align: left;
   border-bottom: 1px dotted #ddd;
   vertical-align: top;
 }
@@ -133,6 +131,9 @@
   margin-bottom: 60px;
   padding-top: 10px;
   padding-bottom: 30px;
+}
+#fieldTabs {
+  font-size: 140%;
 }
 #tabsContent {
   font-size: 140%;
@@ -367,9 +368,10 @@ ul.search-icon li > a {
 ul.search-icon li > a:hover {
   background-color: #3b708c;
 }
-span.rank {
+a.rank {
   font-style: italic;
   font-size: 75%;
+  cursor: pointer;
 }
 /*map legend circles*/
 .marker-circle {
@@ -387,12 +389,12 @@ span.rank {
   background: #f00;
 }
 .blue-circle {
-  background: #0000ff;
+  background: #add8e6;
 }
 .purple-circle {
   background: #800080;
 }
-.list-group-item .grey-line {
+.counties-trigger .grey-line {
   width: 12px;
   height: 2px;
   background: #808080;
@@ -570,6 +572,251 @@ td {
   color: #000 !important;
   border-bottom: none !important;
 }
+th {
+  vertical-align: middle !important;
+}
+.blue-circle {
+  background: #00f;
+}
+.list-group-item .grey-line {
+  width: 12px;
+  height: 2px;
+  background: #808080;
+  display: inline-block;
+  margin: 0 4px;
+  vertical-align: middle;
+}
+/*
+    By some reasons bootstrap datepicker arrow icons is broken
+    this part of css fix it.
+*/
+.icon-arrow-left,
+.icon-arrow-right {
+  position: relative;
+  top: 1px;
+  display: inline-block;
+  font-family: 'Glyphicons Halflings';
+  font-style: normal;
+  font-weight: normal;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.icon-arrow-left:before {
+  content: "\e091";
+}
+.icon-arrow-right:before {
+  content: "\e092";
+}
+/*
+
+*/
+#electedVotes .input-group {
+  width: 100%;
+}
+.input-group textarea {
+  resize: none;
+  width: 100%;
+  height: 100px;
+  padding: 5px;
+}
+/*
+    Set icon for sortable columns.
+*/
+.sort {
+  white-space: nowrap;
+}
+i.icon {
+  background: url("/legacy/img/bg.gif");
+  width: 21px;
+  height: 9px;
+  display: inline-block;
+}
+i.icon__bottom,
+i.icon__top {
+  height: 4px;
+  margin-bottom: 4px;
+}
+i.icon__bottom {
+  background: url("/legacy/img/desc.gif");
+}
+i.icon__top {
+  background: url("/legacy/img/asc.gif");
+}
+/*
+    Url preview.
+*/
+.url-content {
+  padding: 0 16px;
+  display: none;
+  margin-top: 5px;
+}
+.url-content-img {
+  width: 100px;
+  float: left;
+  margin-right: 10px;
+}
+.url-content-title {
+  font-weight: bold;
+}
+.url-content-body {
+  padding: 5px 2px;
+}
+/*
+    Login
+*/
+#user-text a:hover {
+  background-color: transparent;
+}
+#user-text a {
+  padding-right: 0;
+}
+#details .nav {
+  font-size: 140%;
+}
+/*
+    Entity notice
+*/
+.notice {
+  width: 50%;
+  margin: 0 auto;
+  border: 1px solid #f7a4af;
+  box-shadow: 0 1px 4px rgba(255,0,0,0.6);
+}
+.popover-title {
+  padding: 0;
+  border-bottom: none;
+  border-radius: 0;
+}
+.popover-btn {
+  width: 48%;
+  display: inline-block;
+  text-align: right;
+}
+.popover-btn a {
+  background-color: #fff;
+  border: 1px solid #074d71;
+  color: #074d71;
+  border-radius: 3px;
+  padding: 5px 10px;
+}
+.popover-btn a:hover {
+  background-color: #074d71;
+  color: #fff;
+  text-decoration: none;
+}
+.popover {
+  width: 280px;
+}
+.popover-title-custom {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  background-color: #f7f7f7;
+  border-bottom: 1px solid #ebebeb;
+  border-radius: 2px 2px 0 0;
+}
+.popover-content {
+  overflow-y: scroll;
+  height: 300px;
+}
+.popover-content table th {
+  cursor: pointer;
+}
+.popover-content table th:first-child {
+  width: 80%;
+}
+.popover-content table th:last-child {
+  width: 19%;
+}
+.popover-content table th,
+.popover-content table td {
+  font-size: 80%;
+}
+/*
+  Legislation table columns.
+*/
+.legislation-column-date {
+  width: 112px;
+}
+.legislation-column-vote,
+.legislation-column-sponsored,
+td[data-vote] {
+  text-align: center;
+}
+.legislation-column-vote {
+  width: 115px;
+}
+.custom-wrap {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+#City .fixed-th-table-wrapper td,
+#County .fixed-th-table-wrapper td,
+#School_District .fixed-th-table-wrapper td,
+#Special_District .fixed-th-table-wrapper td,
+#City .fixed-th-table-wrapper th,
+#County .fixed-th-table-wrapper th,
+#School_District .fixed-th-table-wrapper th,
+#Special_District .fixed-th-table-wrapper th,
+#City .scrolled-td-table-wrapper td,
+#County .scrolled-td-table-wrapper td,
+#School_District .scrolled-td-table-wrapper td,
+#Special_District .scrolled-td-table-wrapper td,
+#City .scrolled-td-table-wrapper th,
+#County .scrolled-td-table-wrapper th,
+#School_District .scrolled-td-table-wrapper th,
+#Special_District .scrolled-td-table-wrapper th {
+  background: #fff;
+}
+#City .fixed-th-table-wrapper,
+#County .fixed-th-table-wrapper,
+#School_District .fixed-th-table-wrapper,
+#Special_District .fixed-th-table-wrapper {
+  position: absolute;
+}
+#City .fixed-th-table-wrapper th,
+#County .fixed-th-table-wrapper th,
+#School_District .fixed-th-table-wrapper th,
+#Special_District .fixed-th-table-wrapper th {
+  position: relative;
+  z-index: 1;
+}
+#City .scrolled-td-table-wrapper,
+#County .scrolled-td-table-wrapper,
+#School_District .scrolled-td-table-wrapper,
+#Special_District .scrolled-td-table-wrapper {
+  overflow-x: auto;
+}
+#City .scrolled-td-table-wrapper td,
+#County .scrolled-td-table-wrapper td,
+#School_District .scrolled-td-table-wrapper td,
+#Special_District .scrolled-td-table-wrapper td {
+  position: relative;
+}
+#City table,
+#County table,
+#School_District table,
+#Special_District table {
+  border-spacing: 0;
+}
+#City th:first-child,
+#County th:first-child,
+#School_District th:first-child,
+#Special_District th:first-child {
+  border-left-width: 1px;
+}
+#City tr:last-child td,
+#County tr:last-child td,
+#School_District tr:last-child td,
+#Special_District tr:last-child td,
+#City tr:last-child th,
+#County tr:last-child th,
+#School_District tr:last-child th,
+#Special_District tr:last-child th {
+  border-bottom-width: 1px;
+}
 @-moz-keyframes load8 {
   0% {
     -webkit-transform: rotate(0deg);
@@ -610,77 +857,3 @@ td {
     transform: rotate(360deg);
   }
 }
-
-/*
-    By some reasons bootstrap datepicker arrow icons is broken
-    this part of css fix it.
-*/
-.icon-arrow-left,
-.icon-arrow-right {
-    position: relative;
-    top: 1px;
-    display: inline-block;
-    font-family: 'Glyphicons Halflings';
-    font-style: normal;
-    font-weight: normal;
-    line-height: 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-.icon-arrow-left:before { content: "\e091"; }
-.icon-arrow-right:before { content: "\e092"; }
-
-/*
-
-*/
-#electedVotes .input-group { width: 100%; }
-.input-group textarea {
-    resize: none;
-    width: 100%;
-    height: 100px;
-    padding: 5px;
-}
-
-/*
-    Set icon for sortable columns.
-*/
-i.icon {
-    background: url('/legacy/img/bg.gif');
-    width: 21px;
-    height: 9px;
-    display: inline-block;
-}
-i.icon__bottom,
-i.icon__top {
-    height: 4px;
-    margin-bottom: 4px;
-}
-i.icon__bottom { background: url('/legacy/img/desc.gif'); }
-i.icon__top { background: url('/legacy/img/asc.gif'); }
-
-
-/*
-    Url preview.
-*/
-.url-content {
-    padding: 0 16px;
-    display: none;
-    margin-top: 5px;
-}
-.url-content-img {
-    width: 100px;
-    float: left;
-}
-.url-content-title,
-.url-content-body { margin-left: 110px; }
-.url-content-title { font-weight: bold; }
-.url-content-body { padding: 5px 2px; }
-
-/*
-    Login
-*/
-#user-text a:hover { background-color: transparent; }
-#user-text a { padding-right: 0; }
-
-#details .nav { font-size: 140%; }

@@ -1,5 +1,6 @@
 bounds_timeout=undefined
-
+# Set lifetime on 1 days, format: days * hours * minutes * seconds * milliseconds.
+pointsCacheLifetime = 24 * 60 * 60 * 1000;
 
 map = new GMaps
   el: '#govmap'
@@ -16,10 +17,16 @@ map = new GMaps
     style: google.maps.ZoomControlStyle.SMALL
   markerClusterer: (map) ->
     options = {
-      gridSize: 0,
+      textSize: 14
+      textColor: 'red'
+      gridSize: 0
       minimumClusterSize: 5 # Allow minimum 5 marker in cluster.
-      ignoreHidden: true # Don't show hidden markers.
-      # In some reason don't work :(
+      ignoreHidden: true # Don't show hidden markers. In some reason don't work :(
+      # For draw chart.
+      legend:
+        "City" : "red"
+        "School District" : "blue"
+        "Special District" : "purple"
     }
     return new MarkerClusterer(map, [], options);
 
@@ -37,6 +44,8 @@ rebuild_filter = ->
 
 # legendType = city, school district, special district, counties
 get_records2 = (legendType, onsuccess) ->
+  #
+  # Retrieve new markers data from server.
   $.ajax
     url:"/api/government/get-markers-data"
 #    url:"http://45.55.0.145/api/government/get-markers-data"
@@ -48,11 +57,43 @@ get_records2 = (legendType, onsuccess) ->
       console.log e
 
 $ ->
-
   rebuild_filter()
-  get_records2 GOVWIKI.gov_type_filter_2, (data) ->
-    GOVWIKI.markers = data;
+  data = window.localStorage.getItem('points')
+
+  #
+  # Load markers data
+  #
+  date = new Date();
+
+  if data and ((Number(window.localStorage.getItem('points_last_update')) + pointsCacheLifetime) >= date.getTime())
+    #
+    # If points data cached in local storage and in actual state, load from cache.
+    #
+    console.log('From cache')
+    GOVWIKI.markers = JSON.parse(data)
+    $(document).trigger('markersLoaded')
+    #
+    # Render points stored in GOVWIKI.markers
+    #
     rerender_markers()
+  else
+    #
+    # Get new data from server.
+    #
+    get_records2 GOVWIKI.gov_type_filter_2, (data) ->
+      #
+      # Store markers data.
+      #
+      console.log('From server')
+      window.localStorage.setItem('points', JSON.stringify(data))
+      date = new Date();
+      window.localStorage.setItem('points_last_update', date.getTime())
+      GOVWIKI.markers = data
+      $(document).trigger('markersLoaded')
+      #
+      # Render points stored in GOVWIKI.markers
+      #
+      rerender_markers()
 
   $('#legend li:not(.counties-trigger)').on 'click', ->
     $(this).toggleClass('active')
@@ -79,7 +120,6 @@ $ ->
 #        marker.setVisible(! marker.getVisible())
 
     map.markerClusterer.repaint();
-    console.log(map.markerClusterer);
 
   $('#legend li.counties-trigger').on 'click', ->
     $(this).toggleClass('active')
@@ -129,9 +169,10 @@ add_marker = (rec)->
   if exist is false then return false
 
   marker = new google.maps.Marker({
-    position: new google.maps.LatLng(rec.latitude, rec.longitude),
-    icon: get_icon(rec.altType),
+    position: new google.maps.LatLng(rec.latitude, rec.longitude)
+    icon: get_icon(rec.altType)
     title:  "#{rec.name}, #{rec.type}",
+#    title: "#{rec.altType}"
     #
     # For legend click handler.
     type: rec.altType
@@ -140,7 +181,34 @@ add_marker = (rec)->
   # On click redirect user to entity page.
   #
   marker.addListener 'click', () ->
-    window.location = "#{rec.altTypeSlug}/#{rec.slug}"
+    $('#details').hide()
+    $('#searchContainer').hide()
+    $('#dataContainer').show()
+    $('#wikipediaContainer').hide()
+    $('.loader').show()
+    $('#stantonIcon').show()
+    $('#searchIcon').show()
+    console.log('Click on marker');
+    url = "#{rec.altTypeSlug}/#{rec.slug}"
+    console.log(url);
+    jQuery.get url, {}, (data) ->
+      if data
+        $.ajax
+#                    url: "http://45.55.0.145/api/government" + url,
+          url: "/api/government/" + url,
+          dataType: 'json'
+          cache: true
+          success: (elected_officials_data) ->
+            govs = elected_officials_data
+            $('.loader').hide()
+            $('#details').show()
+            compiled_gov_template = GOVWIKI.templates.get_html(0, govs)
+            GOVWIKI.tplLoaded = true
+            window.history.pushState {template: compiled_gov_template}, 'CPC Civic Profiles', url
+            $('#details').html compiled_gov_template
+            GOVWIKI.show_data_page()
+          error: (e) ->
+            console.log e
   map.addMarker marker
 
 #  map.addMarker

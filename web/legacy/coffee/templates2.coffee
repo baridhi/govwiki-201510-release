@@ -26,22 +26,29 @@ render_field_value = (n,mask,data) ->
     if '' != mask
       if data[n+'_rank'] and data.max_ranks and data.max_ranks[n+'_max_rank']
         v = numeral(v).format(mask)
-        return "#{v} <span class='rank'>(#{data[n+'_rank']} of #{data.max_ranks[n+'_max_rank']})</span>"
+
+        # Find description from fusion tables, set if exist
+        title = 'No title'
+        GOVWIKI.fusion.rows.forEach (row) -> if row[2] is n then title = row[3]
+
+        return "#{v} <a class='rank'
+                      data-field='#{n}_rank'
+                      title='#{title} ranks'
+                      data-mask='#{mask}''>
+                      (#{data[n+'_rank']} of #{data.max_ranks[n+'_max_rank']})</a>"
       if n == "number_of_full_time_employees"
         return numeral(v).format('0,0')
       return numeral(v).format(mask)
     else
-      if v.length > 20 and
-      n == "open_enrollment_schools"
-      then v = v.substring(0, 19) + "<div style='display:inline;color:#074d71'  title='#{v}'>&hellip;</div>"
-      if v.length > 20 and
-      n == "parent_trigger_eligible_schools"
-      then v = v.substring(0, 19) + "<div style='display:inline;color:#074d71'  title='#{v}'>&hellip;</div>"
+      if v.length > 20 and n == "open_enrollment_schools"
+        v = v.substring(0, 19) + "<div style='display:inline;color:#074d71'  title='#{v}'>&hellip;</div>"
+      else if v.length > 20 and n == "parent_trigger_eligible_schools"
+        v = v.substring(0, 19) + "<div style='display:inline;color:#074d71'  title='#{v}'>&hellip;</div>"
       else
         if v.length > 21
-        then v = v.substring(0, 21)
+          v = v.substring(0, 21)
         else
-        return v
+          return v
 
 
 render_field_name_help = (fName) ->
@@ -258,9 +265,10 @@ render_tabs = (initial_layout, data, tabset, parent) ->
           if graph
             `google.load('visualization', '1.0', {'packages': 'corechart', 'callback': drawChart()})`
           plot_handles['median-comp-graph'] ='median-comp-graph'
+
         if not plot_handles['median-pension-graph']
           graph = true
-          if data['median_pension_30_year_retiree'] == 0
+          if ! data.hasOwnProperty('median_pension_30_year_retiree') || ( data['median_pension_30_year_retiree'] == 0)
             graph = false
           drawChart = () ->
             setTimeout ( ->
@@ -289,12 +297,12 @@ render_tabs = (initial_layout, data, tabset, parent) ->
                  }
                 'isStacked': 'true'
                 'colors': ['#005ce6', '#009933']
-              if graph
-                chart = new google.visualization.ColumnChart document.getElementById 'median-pension-graph'
-                chart.draw vis_data, options
+              chart = new google.visualization.ColumnChart document.getElementById 'median-pension-graph'
+              chart.draw vis_data, options
               return
             ), 1000
-          `google.load('visualization', '1.0', {'packages': 'corechart', 'callback': drawChart()})`
+          if graph
+            `google.load('visualization', '1.0', {'packages': 'corechart', 'callback': drawChart()})`
           plot_handles['median-pension-graph'] ='median-pension-graph'
       when 'Financial Health'
         h = ''
@@ -675,6 +683,7 @@ class Templates2
       cache: true
       async: false
       success: (template_json) =>
+        GOVWIKI.fusion = template_json
         t = convert_fusion_template template_json
         @add_template(template_name, t)
 
