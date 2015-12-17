@@ -1,6 +1,8 @@
 {% extends "::base.html.twig" %}
+{% block title %}GovWiki Admin{% endblock title %}
 {% block stylesheets %}
     {{ parent() }}
+    <link href="https://bootswatch.com/paper/bootstrap.min.css" rel="stylesheet">
     {% stylesheets '@GovWikiAdminBundle/Resources/public/css/*' %}
         <link rel="stylesheet" href="{{ asset_url }}" />
     {% endstylesheets %}
@@ -8,27 +10,26 @@
 {% block header %}
 <nav class="navbar navbar-default navbar-branded">
     <div class="container-fluid">
-        <div class="navbar-header">
-            <a class="navbar-brand" href="{{ path('govwiki_admin_main_home') }}"><img src="{{ asset('img/a_logo.png') }}"></a>
+        <div class="navbar-header" style="width: 100%;">
+            <a class="navbar-brand" href="{{ path('govwiki_admin_main_home') }}"><img src="{{ asset('legacy/img/logo_cpc_v2_244x60.png') }}"></a>
                 <ul class="nav navbar-nav">
-                    <li{% if app.request.attributes.get('_route') == 'govwiki_admin_government_index' %} class="active"{% endif %}>
-                        <a href="{{ path('govwiki_admin_government_index') }}">Governments</a>
-                    </li>
-                    <li{% if app.request.attributes.get('_route') == 'govwiki_admin_electedofficial_index' %} class="active"{% endif %}>
-                        <a href="{{ path('govwiki_admin_electedofficial_index') }}">Elected Officials</a>
-                    </li>
-                    <li{% if app.request.attributes.get('_route') == 'govwiki_admin_legislation_index' %} class="active"{% endif %}>
-                        <a href="{{ path('govwiki_admin_legislation_index') }}">Legislation</a>
-                    </li>
-                    <li{% if app.request.attributes.get('_route') == 'govwiki_admin_createrequest_index' %} class="active"{% endif %}>
-                        <a href="{{ path('govwiki_admin_createrequest_index') }}">Create Requests</a>
-                    </li>
-                    <li{% if app.request.attributes.get('_route') == 'govwiki_admin_editrequest_index' %} class="active"{% endif %}>
-                        <a href="{{ path('govwiki_admin_editrequest_index') }}">Edit Requests</a>
-                    </li>
-                    <li{% if app.request.attributes.get('_route') == 'govwiki_admin_user_index' %} class="active"{% endif %}>
-                        <a href="{{ path('govwiki_admin_user_index') }}">Users</a>
-                    </li>
+                    {% block enviroment_menu %}
+                        <li{% if app.request.attributes.get('_route') == 'govwiki_admin_user_index' %} class="active"{% endif %}>
+                            <a href="{{ path('govwiki_admin_user_index') }}">Users</a>
+                        </li>
+                    {% endblock enviroment_menu %}
+                </ul>
+                <ul class="nav navbar-nav pull-right">
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <li>
+                            <a href="
+                                {{-
+                                    path('fos_user_security_logout')
+                                -}}">
+                                Logout
+                            </a>
+                        </li>
+                    {% endif %}
                 </ul>
         </div>
     </div>
@@ -53,7 +54,9 @@
 {% endblock %}
 {% block javascripts %}
     {{ parent() }}
-    {% javascripts '@HeltheTurbolinksBundle/Resources/public/js/turbolinks.js' %}
-        <script type="text/javascript" src="{{ asset_url }}"></script>
-    {% endjavascripts %}
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    {#{% javascripts '@HeltheTurbolinksBundle/Resources/public/js/turbolinks.js' %}#}
+        {#<script type="text/javascript" src="{{ asset_url }}"></script>#}
+    {#{% endjavascripts %}#}
 {% endblock %}

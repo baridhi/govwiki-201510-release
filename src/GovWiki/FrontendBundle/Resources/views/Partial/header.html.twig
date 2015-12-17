@@ -1,0 +1,79 @@
+<div class="row">
+
+    {# Logo #}
+    <div class="col-xs-6 col-sm-6 col-md-3">
+
+        <a href="http://californiapolicycenter.org/">
+            <img src="/legacy/img/logo_cpc_v2_244x60.png" alt="California Policy Center" class="logo">
+        </a>
+
+    </div>
+
+    {# Menu button (hamburger) for mobile devices #}
+    <div class="col-xs-6 col-sm-6 visible-xs visible-sm">
+
+        <button type="button" class="hamburger navbar-toggle collapsed" data-toggle="collapse"
+                data-target="#bs-navigation-collapse" aria-expanded="false">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+
+    </div>
+
+    {# Navigation #}
+    <nav class="col-xs-12 col-sm-12 col-md-9 text-right">
+
+        <ul class="navigation navbar-collapse collapse" id="bs-navigation-collapse">
+
+            {% if app.user %}
+                {# Show User name (Athorized) #}
+                <li>
+                    <a href="javascript:void(0)">
+                        Logged in as {{ app.user.username }}
+                    </a>
+                </li>
+
+                {# Logout button #}
+                <li>
+                    <a href="{{path('fos_user_security_logout')}}">
+                        Sign Out
+                    </a>
+                </li>
+
+            {% else %}
+                {# Login button#}
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#modal-window">
+                        Login / Sign Up
+                    </a>
+                </li>
+
+            {% endif %}
+
+            {# Return to map #}
+            {% if app.request.attributes.get('_route') != "map" %}
+                <li>
+                    <a href="/">
+                        Return to Map
+                    </a>
+                </li>
+            {% endif %}
+
+            {# Return to some government #}
+            {% if app.request.attributes.get('_route') == "elected" %}
+                <li>
+                    <a href="{{ path('government', {
+                        altTypeSlug: altTypeSlug,
+                        slug: slug
+                    }) }}">
+                        Return to {{ slug|replace('_', ' ') }}
+                    </a>
+                </li>
+            {% endif %}
+
+        </ul>
+
+    </nav>
+
+</div>
