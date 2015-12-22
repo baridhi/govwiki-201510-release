@@ -2,8 +2,14 @@
 
 namespace GovWiki\ApiBundle\Manager;
 
+use CartoDbBundle\Service\CartoDbApi;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
+use GovWiki\DbBundle\Entity\CreateRequest;
+use GovWiki\DbBundle\Entity\EditRequest;
+use GovWiki\DbBundle\Entity\ElectedOfficial;
+use GovWiki\DbBundle\Entity\Environment;
+use GovWiki\DbBundle\Entity\Map;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Class EnvironmentManager
@@ -17,16 +23,23 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
     private $em;
 
     /**
+     * @var CartoDbApi
+     */
+    private $api;
+
+    /**
      * @var string
      */
     private $environment;
 
     /**
-     * @param EntityManagerInterface $em A EntityManagerInterface instance.
+     * @param EntityManagerInterface $em  A EntityManagerInterface instance.
+     * @param CartoDbApi             $api A CartoDbApi instance.
      */
-    public function __construct(EntityManagerInterface $em)
+    public function __construct(EntityManagerInterface $em, CartoDbApi $api)
     {
         $this->em = $em;
+        $this->api = $api;
     }
 
     /**
@@ -48,6 +61,14 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
     }
 
     /**
+     * @return string
+     */
+    public function getSlug()
+    {
+        return Environment::slugify($this->environment);
+    }
+
+    /**
      * Get used alt types by government in current environment.
      *
      * @return array|null
@@ -62,7 +83,7 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
         $tmp = $qb
             ->leftJoin('Government.environment', 'Environment')
             ->where($expr->eq(
-                'Environment.name',
+                'Environment.slug',
                 $expr->literal($this->environment)
             ))
             ->groupBy('Government.altType')
@@ -82,12 +103,54 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
     }
 
     /**
-     * @return array|null
+     * @return Map|null
+     *
+     * @throws NotFoundHttpException Import process failed.
      */
     public function getMap()
     {
-        return $this->em->getRepository('GovWikiDbBundle:Map')
-            ->getWithGovernments($this->environment);
+        $map = $this->em->getRepository('GovWikiDbBundle:Map')
+            ->get($this->environment);
+
+        if (null !== $map->getItemQueueId()) {
+            /*
+             * Check map import status.
+             */
+            $result = $this->api
+                ->checkImportProcess($map->getItemQueueId());
+
+            if (true === $result['success']) {
+                if ('complete' === $result['state']) {
+                    $map->setCreated(true);
+                    $map->setVizUrl($this->api->getVizUrl($result));
+                    $map->setItemQueueId(null);
+
+                    $this->em->persist($map);
+                    $this->em->flush();
+
+                } elseif ('failed' === $result['state']) {
+                    throw new NotFoundHttpException('Map not imported.');
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return string
+     */
+    public function getGreetingText()
+    {
+        $qb = $this->em->getRepository('GovWikiDbBundle:Environment')
+            ->createQueryBuilder('Environment');
+        $expr = $qb->expr();
+
+        return $qb
+            ->select('Environment.greetingText')
+            ->where($expr->eq('Environment.slug', $expr->literal($this->environment)))
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**
@@ -98,15 +161,60 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
      */
     public function getGovernment($altTypeSlug, $slug)
     {
+        $government = $this->em->getRepository('GovWikiDbBundle:Government')
+            ->findGovernment($this->environment, $altTypeSlug, $slug);
+
+        $formats = $this->em->getRepository('GovWikiDbBundle:Format')
+            ->get($this->environment);
 
         return [
-            'government' => $this->em->getRepository('GovWikiDbBundle:Government')
-                ->findGovernment($this->environment, $altTypeSlug, $slug),
-            'formats' => $this->em->getRepository('GovWikiDbBundle:Format')
-                ->get($this->environment),
-            'tabs' => $this->em->getRepository('GovWikiDbBundle:Tab')
-                ->getNames($this->environment),
+            'government' => $government,
+            'formats' => $formats,
+            'tabs' => array_keys($formats),
         ];
+    }
+
+    /**
+     * @param string $altTypeSlug Slugged government alt type.
+     * @param string $slug        Slugged government name.
+     * @param array  $parameters  Array of parameters:
+     *                            <ul>
+     *                              <li>field_name (required)</li>
+     *                              <li>limit (required)</li>
+     *                              <li>page</li>
+     *                              <li>order</li>
+     *                              <li>name_order</li>
+     *                            </ul>.
+     * @return array
+     */
+    public function getGovernmentRank($altTypeSlug, $slug, array $parameters)
+    {
+        $rankFieldName = $parameters['field_name'];
+        $limit = $parameters['limit'];
+        $page = $parameters['page'];
+        $order = $parameters['order'];
+        $nameOrder = $parameters['name_order'];
+
+        return $this->em->getRepository('GovWikiDbBundle:Government')
+            ->getGovernmentRank(
+                $this->environment,
+                $altTypeSlug,
+                $slug,
+                $rankFieldName,
+                $limit,
+                $page,
+                $order,
+                $nameOrder
+            );
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getStyle()
+    {
+        return $this->em->getRepository('GovWikiDbBundle:Environment')
+            ->getStyle($this->environment);
     }
 
     /**
@@ -114,7 +222,7 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
      * @param string $slug        Slugged government name.
      * @param string $eoSlug      Slugged elected official full name.
      *
-     * @return array
+     * @return array|null
      */
     public function getElectedOfficial($altTypeSlug, $slug, $eoSlug)
     {
@@ -132,12 +240,43 @@ class EnvironmentManager implements EnvironmentManagerAwareInterface
             return [
                 'electedOfficial' => $electedOfficial,
                 'createRequests' => $createRequests,
-                'issuesCategory' => $this->em
+                'categories' => $this->em
                     ->getRepository('GovWikiDbBundle:IssueCategory')
                     ->findAll(),
+                'electedOfficials' => $this->em
+                    ->getRepository('GovWikiDbBundle:Government')
+                    ->governmentElectedOfficial($electedOfficial['id']),
             ];
         }
 
         return null;
+    }
+
+    /**
+     * Create new create request and sets it environment.
+     *
+     * @return CreateRequest
+     */
+    public function createCreateRequest() // Sorry :-)
+    {
+        $createRequest = new CreateRequest();
+        return $createRequest->setEnvironment(
+            $this->em->getRepository('GovWikiDbBundle:Environment')
+                ->getReferenceByName($this->environment)
+        );
+    }
+
+    /**
+     * Create new edit request and sets it environment.
+     *
+     * @return EditRequest
+     */
+    public function createEditRequest()
+    {
+        $editRequest = new EditRequest();
+        return $editRequest->setEnvironment(
+            $this->em->getRepository('GovWikiDbBundle:Environment')
+                ->getReferenceByName($this->environment)
+        );
     }
 }

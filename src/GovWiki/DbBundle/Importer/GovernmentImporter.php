@@ -2,11 +2,7 @@
 
 namespace GovWiki\DbBundle\Importer;
 
-use GovWiki\AdminBundle\Exception\FileTransformerException;
 use GovWiki\AdminBundle\Transformer\FileTransformerInterface;
-use GovWiki\DbBundle\Entity\Government;
-use GovWiki\DbBundle\Entity\Repository\GovernmentRepository;
-use GovWiki\DbBundle\Exception\InvalidFieldNameException;
 
 /**
  * Class GovernmentImporter
@@ -15,16 +11,6 @@ use GovWiki\DbBundle\Exception\InvalidFieldNameException;
 class GovernmentImporter extends AbstractImporter
 {
     /**
-     * Entity name supported by this importer.
-     *
-     * @return string
-     */
-    protected function getEntityName()
-    {
-        return 'GovWiki\DbBundle\Entity\Government';
-    }
-
-    /**
      * {@inheritdoc}
      */
     public function import(
@@ -32,29 +18,28 @@ class GovernmentImporter extends AbstractImporter
         FileTransformerInterface $transformer
     ) {
         $data = $transformer->transform($filePath);
+        $id = $this->manager->getEnvironmentReference()->getId();
+
+        $insertStmts = [];
+        $columns = [ 'environment_id' ];
+        foreach (array_keys($data[0]) as $field) {
+            $str = strtolower(preg_replace('|([A-Z])|', '_$1', $field));
+            $str = preg_replace('|(\d+)|', '_$1', $str);
+            $columns[] = $str;
+        }
+
         foreach ($data as $row) {
-            $government = new Government();
-            foreach ($row as $filed => $value) {
-                $method = 'set'. ucfirst($filed);
-                if (method_exists($government, $method)) {
-                    call_user_func(
-                        [
-                            $government,
-                            $method,
-                        ],
-                        [ $value ]
-                    );
-                } else {
-                    throw new InvalidFieldNameException(
-                        $filed,
-                        $this->getEntityName()
-                    );
-                }
+            foreach ($row as &$value) {
+                $value = (empty($value)) ? 'null' : '"'. $value .'"';
             }
 
-            $this->persist($government);
+            $insertStmts[] = '(' . $id . ', '. implode(',', $row). ')';
         }
-        $this->flush();
+
+        $this->con->exec('
+            insert into governments ('. implode(',', $columns) .') values
+            '. implode(',', $insertStmts) .'
+        ');
     }
 
     /**
@@ -62,21 +47,12 @@ class GovernmentImporter extends AbstractImporter
      */
     public function export(
         $filePath,
-        array $columns,
-        FileTransformerInterface $transformer
+        FileTransformerInterface $transformer,
+        array $columns = null,
+        $offset = 0,
+        $limit = null
     ) {
-        /** @var GovernmentRepository $repository */
-        $repository = $this->getRepository();
-        $qb = $repository->createQueryBuilder('Government');
-
-        if (count($columns) > 0) {
-            $qb->select($this->prepareSelect($columns));
-        }
-
-        $data = $qb
-            ->getQuery()
-            ->getArrayResult();
-
+        $data = $this->manager->getAll($columns, $offset, $limit);
         $transformer->reverseTransform($filePath, $data);
     }
 }

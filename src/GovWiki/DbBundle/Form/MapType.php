@@ -30,14 +30,15 @@ class MapType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
+        if (! $this->isNew) {
+            $builder->add('vizUrl', 'url');
+        }
         $builder
             ->add('centerLatitude', 'number')
             ->add('centerLongitude', 'number')
             ->add('zoom', 'integer');
         if ($this->isNew) {
-            $builder
-                ->add('countyFile', 'file')
-                ->add('governmentsFile', 'file', ['required' => false]);
+            $builder->add('countyFile', 'file');
         }
     }
 

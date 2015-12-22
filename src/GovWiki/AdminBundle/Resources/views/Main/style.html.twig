@@ -1,0 +1,34 @@
+{% extends "GovWikiAdminBundle:Layout:environment.html.twig" %}
+
+{% block title %}{{ parent() }} - style{% endblock %}
+
+{% block body %}
+    <div class="container-fluid">
+        {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <a class="btn btn-default" href="{{ path('govwiki_admin_main_show') }}">
+            Back
+        </a>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}
+
+
+{% block stylesheets %}
+    {{ parent() }}
+    {# Bootstrap colorpicker #}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-colorpicker/2.3.0/css/bootstrap-colorpicker.min.css"/>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="application/javascript">
+        $(function() {
+            $('.color-picker').colorpicker({
+                format: 'hex',
+                align: 'left'
+            });
+        })
+    </script>
+{% endblock javascripts %}

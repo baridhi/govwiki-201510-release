@@ -22,39 +22,10 @@ class TabRepository extends EntityRepository
         return $qb
             ->select('Tab.id, Tab.name, Tab.orderNumber')
             ->join('Tab.environment', 'Environment')
-            ->where($expr->eq('Environment.name', $expr->literal($environment)))
+            ->where($expr->eq('Environment.slug', $expr->literal($environment)))
             ->orderBy($expr->asc('Tab.orderNumber'))
             ->addOrderBy($expr->asc('Tab.name'))
             ->getQuery();
-    }
-
-    /**
-     * @param string $environment Environment name.
-     *
-     * @return array
-     */
-    public function getNames($environment)
-    {
-        $qb = $this->createQueryBuilder('Tab');
-        $expr = $qb->expr();
-
-        $buf = $qb
-            ->select('Tab.name, Tab.id')
-            ->join('Tab.environment', 'Environment')
-            ->where($expr->eq('Environment.name', $expr->literal($environment)))
-            ->orderBy($expr->asc('Tab.orderNumber'))
-            ->addOrderBy($expr->asc('Tab.name'))
-            ->getQuery()
-            ->getResult();
-
-        $result = [];
-        if (count($buf) > 0) {
-            foreach ($buf as $row) {
-                $result[$row['id']] = $row['name'];
-            }
-        }
-
-        return $result;
     }
 
     /**
@@ -74,7 +45,7 @@ class TabRepository extends EntityRepository
                 ->join('Tab.environment', 'Environment')
                 ->where(
                     $expr->andX(
-                        $expr->eq('Environment.name', $expr->literal($environment)),
+                        $expr->eq('Environment.slug', $expr->literal($environment)),
                         $expr->lt('Tab.orderNumber', $orderNumber)
                     )
                 )
@@ -110,7 +81,7 @@ class TabRepository extends EntityRepository
                 ->join('Tab.environment', 'Environment')
                 ->where(
                     $expr->andX(
-                        $expr->eq('Environment.name', $expr->literal($environment)),
+                        $expr->eq('Environment.slug', $expr->literal($environment)),
                         $expr->gt('Tab.orderNumber', $orderNumber)
                     )
                 )

@@ -3,7 +3,6 @@
 namespace GovWiki\DbBundle\Entity\Repository;
 
 use Doctrine\ORM\EntityRepository;
-use GovWiki\DbBundle\Entity\Format;
 
 /**
  * FormatRepository
@@ -24,7 +23,7 @@ class FormatRepository extends EntityRepository
         if ($full) {
             $qb->select(
                 'Format.helpText, Format.dataOrFormula, Format.description',
-                'Format.mask, Format.field, Format.ranked'
+                'Format.mask, Format.field, Format.ranked, Format.showIn'
             );
         } else {
             $qb->select('Format.id, Format.field, Format.description');
@@ -37,7 +36,7 @@ class FormatRepository extends EntityRepository
             ->leftJoin('Format.environment', 'Environment')
             ->leftJoin('Format.category', 'Category')
             ->leftJoin('Format.tab', 'Tab')
-            ->where($expr->eq('Environment.name', $expr->literal($environment)))
+            ->where($expr->eq('Environment.slug', $expr->literal($environment)))
             ->orderBy($expr->asc('Tab.orderNumber'))
             ->addOrderBy($expr->asc('Tab.name'))
             ->addOrderBy($expr->asc('Category.orderNumber'))
@@ -46,15 +45,20 @@ class FormatRepository extends EntityRepository
     }
 
     /**
-     * @param string $environment Environment name.
+     * @param string  $environment Environment name.
+     * @param boolean $plain       Flag, if set return plain array without
+     *                             grouping by tab names and fields.
      *
      * @return array
      */
-    public function get($environment)
+    public function get($environment, $plain = false)
     {
         $result = $this->getListQuery($environment, true)
             ->getArrayResult();
 
+        if ($plain) {
+            return $result;
+        }
         return $this->groupBy($result, [ 'tab_name', 'field' ]);
     }
 

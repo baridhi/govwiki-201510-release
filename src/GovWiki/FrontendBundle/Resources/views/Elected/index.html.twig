@@ -1,7 +1,6 @@
 {% extends "GovWikiFrontendBundle:Layout:main.html.twig" %}
 
 {% set elected = electedOfficial %}
-
 {# Main #}
 {% block main %}
 
@@ -64,6 +63,101 @@
 
     </section>
 
+    <!-- Disqus Modal -->
+    {% include 'GovWikiFrontendBundle:Partial/Elected/Modals:disqus.html.twig' %}
+
+    <!-- Votes Modal -->
+    {% include 'GovWikiFrontendBundle:Partial/Elected/Modals:votes.html.twig' %}
+
+    <!-- Contributions Modal -->
+    {% include 'GovWikiFrontendBundle:Partial/Elected/Modals:contributions.html.twig' %}
+
+    <!-- Endorsements Modal -->
+    {% include 'GovWikiFrontendBundle:Partial/Elected/Modals:endorsements.html.twig' %}
+
+    <!-- Public Statements Modal -->
+    {% include 'GovWikiFrontendBundle:Partial/Elected/Modals:publicStatements.html.twig' %}
+
+
+    {% verbatim %}
+    <script id="row-addVotes" type="text//x-handlebars-template">
+    <tr data-id style="background: rgba(80, 0, 0, 0.1)">
+        <td data-date-considered="{{dateConsidered}}">
+            {{dateConsidered}}
+        </td>
+        <td data-name="{{name}}" data-no-editable>
+            {{name}}
+        </td>
+        <td data-summary="{{summary}}" data-no-editable>
+            {{summary}}
+        </td>
+        <td data-vote="{{vote}}" data-no-editable>
+            {{vote}}
+        </td>
+        <td align="center" data-did-elected-official-propose-this="{{#if did_elected_official_propose_this}}Yes{{else}}No{{/if}}" data-no-editable>
+            {{#if did_elected_official_propose_this}}Yes{{else}}No{{/if}}
+        </td>
+        <td data-issue-category="{{category}}" data-no-editable>{{category}}</td>
+        <td data-no-editable>{{username}}</td>
+    </tr>
+</script>
+
+<script id="row-addContributions" type="text//x-handlebars-template">
+    <tr data-id style="background: rgba(80, 0, 0, 0.1)">
+        <td data-election-year="{{electionYear}}" data-no-editable>
+            {{electionYear}}
+        </td>
+        <td data-contributor-name="{{contributorName}}" data-no-editable>
+            {{contributorName}}
+        </td>
+        <td data-independent-expenditure-desc="{{independentExpenditureDesc}}" data-no-editable>
+            {{independentExpenditureDesc}}
+        </td>
+        <td data-contribution-amount="{{contributionAmount}}" data-no-editable>
+            {{contributionAmount}}
+        </td>
+        <td data-contributor-type="{{contributorType}}" data-no-editable=>
+            {{contributorType}}
+        </td>
+        <td data-no-editable>{{username}}</td>
+    </tr>
+</script>
+
+<script id="row-addEndorsements" type="text//x-handlebars-template">
+    <tr data-id style="background: rgba(80, 0, 0, 0.1)">
+        <td data-election-year="{{electionYear}}" data-no-editable>
+            {{electionYear}}
+        </td>
+        <td data-name-of-endorser="{{nameOfEndorser}}" data-no-editable>
+            {{nameOfEndorser}}
+        </td>
+        <td data-endorser-type="{{endorserType}}" data-no-editable>
+            {{endorserType}}
+        </td>
+        <td data-no-editable>{{username}}</td>
+    </tr>
+</script>
+
+<script id="row-addStatements" type="text//x-handlebars-template">
+    <tr data-id style="background: rgba(80, 0, 0, 0.1)">
+        <td data-date="{{date}}" data-no-editable>
+            {{date}}
+        </td>
+        <td data-contributor-name="{{summary}}" data-no-editable>
+            {{summary}}
+        </td>
+        <td data-url="{{url}}" data-no-editable>
+            {{url}}
+        </td>
+        <td data-url="{{category}}" data-no-editable="">
+            {{category}}
+        </td>
+        <td data-no-editable>{{username}}</td>
+    </tr>
+</script>
+
+    {% endverbatim %}
+
 {% endblock %}
 
 
@@ -86,9 +180,17 @@
 
     {{parent()}}
 
-    <script src="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+    <script>
+        window.gw.electedOfficial = '{{ electedOfficialJSON | raw }}';
+    </script>
 
-    {% javascripts  '@GovWikiFrontendBundle/Resources/public/js/script.js'
+    <script src="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/js/bootstrap-editable.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/numeral.js/1.4.5/numeral.min.js"></script>
+    <script id="dsq-embed-scr" src="//cpc-civicprofiles.disqus.com/embed.js"></script>
+    <script id="dsq-count-scr" src="//cpc-civicprofiles.disqus.com/count.js"></script>
+
+    {% javascripts  '@GovWikiFrontendBundle/Resources/public/js/vendor/handlebars.js'
+                    '@GovWikiFrontendBundle/Resources/public/js/script.js'
                     '@GovWikiFrontendBundle/Resources/public/js/elected/handlers.js'
                     output='js/elected.js' %}
         <script src="{{ asset_url }}"></script>

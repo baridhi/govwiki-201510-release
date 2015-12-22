@@ -6,10 +6,12 @@ services:
 
     govwiki_db.importer.abstract:
         class: GovWiki\DbBundle\Importer\AbstractImporter
-        arguments: [@doctrine.orm.default_entity_manager]
+        arguments: [@database_connection]
+        abstract: true
 
     govwiki_db.importer.government:
         class: GovWiki\DbBundle\Importer\GovernmentImporter
+        arguments: [@govwiki_admin.entity_manager.government]
         parent: govwiki_db.importer.abstract
 
     govwiki_db.form.type.alt_type:
@@ -17,3 +19,14 @@ services:
         arguments: [@govwiki_api.manager.environment]
         tags:
             - { name: form.type, alias: alt_type }
+
+    govwiki_db.form.type.color:
+        class: GovWiki\DbBundle\Form\Type\ColorType
+        tags:
+            - { name: form.type, alias: color }
+
+    govwiki_db.form.government:
+        class: GovWiki\DbBundle\Form\GovernmentType
+        arguments: [@govwiki_admin.manager.environment]
+        tags:
+            - { name: form.type, alias: government }

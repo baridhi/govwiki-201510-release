@@ -2,8 +2,9 @@
 
 namespace GovWiki\DbBundle\Importer;
 
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\DBAL\Connection;
 use GovWiki\AdminBundle\Exception\FileTransformerException;
+use GovWiki\AdminBundle\Manager\AbstractAdminEntityManager;
 use GovWiki\AdminBundle\Transformer\FileTransformerInterface;
 use GovWiki\DbBundle\Exception\InvalidFieldNameException;
 
@@ -14,16 +15,23 @@ use GovWiki\DbBundle\Exception\InvalidFieldNameException;
 abstract class AbstractImporter
 {
     /**
-     * @var EntityManagerInterface
+     * @var AbstractAdminEntityManager
      */
-    private $em;
+    protected $manager;
 
     /**
-     * @param EntityManagerInterface $em EntityManagerInterface instance.
+     * @var \Doctrine\DBAL\Connection
      */
-    public function __construct(EntityManagerInterface $em)
+    protected $con;
+
+    /**
+     * @param AbstractAdminEntityManager $manager A AbstractAdminEntityManager
+     *                                            instance.
+     */
+    public function __construct(Connection $con, AbstractAdminEntityManager $manager)
     {
-        $this->em = $em;
+        $this->manager = $manager;
+        $this->con = $con;
     }
 
     /**
@@ -54,59 +62,9 @@ abstract class AbstractImporter
      */
     abstract public function export(
         $filePath,
-        array $columns,
-        FileTransformerInterface $transformer
+        FileTransformerInterface $transformer,
+        array $columns = null,
+        $limit,
+        $offset
     );
-
-    /**
-     * Entity name supported by this importer.
-     *
-     * @return string
-     */
-    abstract protected function getEntityName();
-
-    /**
-     * @return \Doctrine\Common\Persistence\ObjectRepository
-     */
-    protected function getRepository()
-    {
-        return $this->em->getRepository($this->getEntityName());
-    }
-
-    /**
-     * @param object $entity Entity object to persist.
-     *
-     * @return void
-     */
-    protected function persist($entity)
-    {
-        $this->em->persist($entity);
-    }
-
-    /**
-     * @return void
-     */
-    protected function flush()
-    {
-        $this->flush();
-    }
-
-    /**
-     * @param array $columns Exported columns.
-     *
-     * @return string
-     */
-    protected function prepareSelect(array $columns)
-    {
-        $name = substr(
-            $this->getEntityName(),
-            strrpos($this->getEntityName(), '\\') + 1
-        );
-
-        foreach ($columns as &$column) {
-            $column = "$name.$column";
-        }
-
-        return implode(',', $columns);
-    }
 }

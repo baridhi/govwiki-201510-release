@@ -6,7 +6,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use GovWiki\UserBundle\Entity\User;
+use JMS\Serializer\Annotation\Groups;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Environment
@@ -33,6 +35,7 @@ class Environment
      * @var string
      *
      * @ORM\Column(unique=true)
+     * @Assert\Regex(pattern="|^[\w\s]+$|")
      */
     private $name;
 
@@ -40,29 +43,35 @@ class Environment
      * @var string
      *
      * @ORM\Column()
+     *
+     * @Groups({"map"})
+     */
+    private $slug;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column()
+     * @Assert\NotBlank()
      */
     private $domain;
 
     /**
+     * Use bem like syntax.
+     *
      * @var string
      *
-     * @ORM\Column(type="text")
+     * @ORM\Column(type="json_array")
      */
-    private $header;
+    private $style;
 
     /**
      * @var string
      *
      * @ORM\Column(type="text")
+     * @Assert\NotBlank()
      */
     private $greetingText;
-
-    /**
-     * @var string
-     *
-     * @ORM\Column(type="text")
-     */
-    private $footer;
 
     /**
      * @var boolean
@@ -77,7 +86,7 @@ class Environment
      * @ORM\OneToOne(
      *  targetEntity="Map",
      *  inversedBy="environment",
-     *  cascade={"remove"}
+     *  cascade={"persist", "remove"}
      *)
      * @ORM\JoinColumn(name="map_id")
      */
@@ -86,7 +95,11 @@ class Environment
     /**
      * @var Collection
      *
-     * @ORM\OneToMany(targetEntity="Government", mappedBy="environment")
+     * @ORM\OneToMany(
+     *  targetEntity="Government",
+     *  mappedBy="environment",
+     *  cascade={"remove"}
+     * )
      */
     private $governments;
 
@@ -116,7 +129,8 @@ class Environment
      *
      * @ORM\OneToMany(
      *  targetEntity="AbstractGroup",
-     *  mappedBy="environment"
+     *  mappedBy="environment",
+     *  cascade={"remove"}
      * )
      */
     private $groups;
@@ -161,9 +175,20 @@ class Environment
      */
     public function setName($name)
     {
-        $this->name = $name;
+        $this->name = trim($name);
+        $this->slug = self::slugify($this->name);
 
         return $this;
+    }
+
+    /**
+     * @param string $str String to slugiffy.
+     *
+     * @return string
+     */
+    public static function slugify($str)
+    {
+        return preg_replace('|[^\w\d]|', '_', strtolower($str));
     }
 
     /**
@@ -189,26 +214,6 @@ class Environment
     /**
      * @return string
      */
-    public function getHeader()
-    {
-        return $this->header;
-    }
-
-    /**
-     * @param string $header
-     *
-     * @return Environment
-     */
-    public function setHeader($header)
-    {
-        $this->header = $header;
-
-        return $this;
-    }
-
-    /**
-     * @return string
-     */
     public function getGreetingText()
     {
         return $this->greetingText;
@@ -227,21 +232,21 @@ class Environment
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getFooter()
+    public function getStyle()
     {
-        return $this->footer;
+        return $this->style;
     }
 
     /**
-     * @param mixed $footer
+     * @param string $style
      *
      * @return Environment
      */
-    public function setFooter($footer)
+    public function setStyle($style)
     {
-        $this->footer = $footer;
+        $this->style = $style;
 
         return $this;
     }
@@ -299,7 +304,7 @@ class Environment
     /**
      * @return Format
      */
-    public function getFormat()
+    public function getFormats()
     {
         return $this->formats;
     }
@@ -309,7 +314,7 @@ class Environment
      *
      * @return Environment
      */
-    public function addFormat(Format $format)
+    public function addFormats(Format $format)
     {
         $format->setEnvironment($this);
         $this->formats[] = $format;
@@ -442,5 +447,13 @@ class Environment
     public function getGroups()
     {
         return $this->groups;
+    }
+
+    /**
+     * @return string
+     */
+    public function getSlug()
+    {
+        return $this->slug;
     }
 }

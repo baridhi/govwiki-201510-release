@@ -2,11 +2,7 @@
 /* ========= HEADER ======== */
 /* ========================= */
 
-$link-hover-background: #3b708c;
-$link-hover-text: #b2dbfb;
-
 @import "../../screen";
-
 
 @mixin mobile-navigation() {
 
@@ -49,6 +45,7 @@ body > header {
    .navigation {
       list-style-type: none;
       padding-right: 0;
+      margin-bottom: 15px;
 
       li {
          display: inline-block;
@@ -80,7 +77,7 @@ body > header {
       margin-top: 22px;
 
       &.navbar-toggle{
-         @media(max-width:$screen-sm-max) {
+         @media(max-width: $screen-sm-max) {
             display: block !important;
          }
       }
@@ -91,7 +88,8 @@ body > header {
 
    }
 
-   @media (max-width: 991px) {
+   // Change @grid-float-breakpoint to $sreen-sm-max
+   @media (max-width: $screen-sm-max) {
       .navbar-header {
          float: none;
       }

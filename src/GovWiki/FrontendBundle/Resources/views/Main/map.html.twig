@@ -10,14 +10,14 @@
                 {# Typeahead Search #}
                 <div class="typeahead_wrap">
 
-                    <input id="myinput" type="text" placeholder="Loading the list of governments"
-                           class="text-uppercase typeahead form-control">
+                    <input id="search" type="text" placeholder="Loading the list of governments"
+                           class="text-uppercase typeahead form-control" disabled>
 
                     <p class="text-center text-nowrap hidden-xs hidden-sm">
                         Type part of the agency's name
-                        <img src="/legacy/img/FullSizeRender.gif" style="width:40px">
+                        <img src="{{ asset('bundles/govwikifrontend/img/ArrowUp.gif') }}" style="width:40px">
                         or click it on the map
-                        <img src="/legacy/img/FullSizeRender1.gif" style="width:40px">
+                        <img src="{{ asset('bundles/govwikifrontend/img/ArrowDown.gif') }}" style="width:40px">
                     </p>
 
                 </div>
@@ -29,8 +29,19 @@
 
             <div class="col-sm-12 col-md-6 col-lg-5">
 
-                {# Map #}
+                {# Map wrapper #}
                 <div id="map_wrap">
+
+                    {# Preloader #}
+                    <div class="loader"></div>
+
+                    {# Notification message#}
+                    <div class="mapOnProcessing">
+                        <h5>Please wait, map recently created</h5>
+                        <h5>Please refresh page later</h5>
+                    </div>
+
+                    {# Legend #}
                     <ul id='menu'>
 
                         <li class="legend-header">
@@ -63,7 +74,9 @@
 
                     </ul>
 
+                    {# Map #}
                     <div id="map"></div>
+
                 </div>
 
             </div>
@@ -72,8 +85,8 @@
             <div class="col-sm-12 col-md-6 col-lg-7">
 
                 <div class="intro-text">
-
-                    <div class="title">
+                    {{ greetingText|raw }}
+                    {#<div class="title">
                         <h3>Welcome to California Policy Center’s Civic Performance Profiles</h3>
                     </div>
 
@@ -98,7 +111,7 @@
                         <p>
                             To learn more about a California local government that affects you, please select it from the map or by typing its name.
                         </p>
-                    </div>
+                    </div>#}
                 </div>
 
             </div>
@@ -115,7 +128,7 @@
 
     {{parent()}}
 
-    {% stylesheets '@GovWikiFrontendBundle/Resources/public/css/map.scss' filter='scss' %}
+    {% stylesheets '@GovWikiFrontendBundle/Resources/public/css/map.scss' filter='scss, cssrewrite' %}
     <link rel="stylesheet" href="{{ asset_url }}">
     {% endstylesheets %}
 
@@ -128,14 +141,15 @@
     {{parent()}}
 
     <script src="https://cartodb-libs.global.ssl.fastly.net/cartodb.js/v3/3.13/cartodb.js"></script>
-    <script src="/js/vendor/handlebars.js"></script>
-    <script src="/js/vendor/typeahead.js"></script>
 
     <script> window.gw.map = '{{ map | raw }}'; </script>
     <script> window.gw.environment = '{{ environment }}' </script>
-    {% javascripts  '@GovWikiFrontendBundle/Resources/public/js/script.js'
+    <script> window.gw.styles = '{{ styles | raw }}' </script>
+    {% javascripts  '@GovWikiFrontendBundle/Resources/public/js/vendor/handlebars.js'
+                    '@GovWikiFrontendBundle/Resources/public/js/vendor/typeahead.js'
+                    '@GovWikiFrontendBundle/Resources/public/js/script.js'
                     '@GovWikiFrontendBundle/Resources/public/js/home/search.js'
-                    '@GovWikiFrontendBundle/Resources/public/js/home/map.js' output='js/main.js' %}
+                    '@GovWikiFrontendBundle/Resources/public/js/home/map.js' output='js/map.js' %}
         <script src="{{ asset_url }}"></script>
     {% endjavascripts %}
 

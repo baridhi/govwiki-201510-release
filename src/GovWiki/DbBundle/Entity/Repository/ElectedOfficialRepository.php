@@ -4,7 +4,6 @@ namespace GovWiki\DbBundle\Entity\Repository;
 
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Query\Expr\Join;
-use GovWiki\DbBundle\Entity\ElectedOfficial;
 
 /**
  * ElectedOfficialRepository
@@ -32,20 +31,20 @@ class ElectedOfficialRepository extends EntityRepository
 
         $expr = $qb->expr();
 
-        $qb->where($expr->eq('Environment.name', $expr->literal($environment)));
+        $qb->where($expr->eq('Environment.slug', $expr->literal($environment)));
 
         if (null !== $id) {
             $qb->andWhere($expr->eq('eo.id', $id));
         }
         if (null !== $fullName) {
             $qb->andWhere(
-                $expr->like('eo.fullName', $expr->literal($fullName))
+                $expr->like('eo.fullName', $expr->literal('%'.$fullName.'%'))
             );
         }
         if (null !== $government) {
-            $qb->andWhere($expr->eq(
+            $qb->andWhere($expr->like(
                 'Government.name',
-                $expr->literal($government)
+                $expr->literal('%'.$government.'%')
             ));
         }
 
@@ -60,7 +59,6 @@ class ElectedOfficialRepository extends EntityRepository
      * <ul>
      *  <li>ElectedOfficial entity with all related contributions, endorsements
      * and etc</li>
-     *  <li>Array of available IssueCategories</li>
      *  <li>Array of made CreateRequest for current elected official</li>
      * </ul>
      *
@@ -78,7 +76,8 @@ class ElectedOfficialRepository extends EntityRepository
         return $qb
             ->addSelect(
                 'Contribution, Endorsement, PublicStatement, Vote',
-                'Legislation, Government, CreateRequest'
+                'Legislation, CreateRequest, IssueCategory',
+                'partial Government.{id}'
             )
             ->leftJoin('ElectedOfficial.contributions', 'Contribution')
             ->leftJoin('ElectedOfficial.endorsements', 'Endorsement')
@@ -86,6 +85,7 @@ class ElectedOfficialRepository extends EntityRepository
             ->leftJoin('ElectedOfficial.votes', 'Vote')
             ->leftJoin('ElectedOfficial.government', 'Government')
             ->leftJoin('Vote.legislation', 'Legislation')
+            ->leftJoin('Legislation.issueCategory', 'IssueCategory')
             /*
              * Join made but not applied create requests.
              */
@@ -105,7 +105,7 @@ class ElectedOfficialRepository extends EntityRepository
             ->leftJoin('Government.environment', 'Environment')
             ->where(
                 $expr->andX(
-                    $expr->eq('Environment.name', $expr->literal($environment)),
+                    $expr->eq('Environment.slug', $expr->literal($environment)),
                     $expr->eq('ElectedOfficial.slug', $expr->literal($eoSlug)),
                     $expr->eq('Government.slug', $expr->literal($slug)),
                     $expr->eq(
@@ -115,7 +115,7 @@ class ElectedOfficialRepository extends EntityRepository
                 )
             )
             ->getQuery()
-            ->getResult();
+            ->getArrayResult();
     }
 
     /**

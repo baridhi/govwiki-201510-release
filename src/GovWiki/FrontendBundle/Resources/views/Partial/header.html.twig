@@ -1,10 +1,10 @@
-<div class="row">
+<div class="row header">
 
     {# Logo #}
     <div class="col-xs-6 col-sm-6 col-md-3">
 
         <a href="http://californiapolicycenter.org/">
-            <img src="/legacy/img/logo_cpc_v2_244x60.png" alt="California Policy Center" class="logo">
+            <img src="{{ asset('img/logo_ca.png') }}" alt="California Policy Center" class="logo">
         </a>
 
     </div>
@@ -44,7 +44,7 @@
             {% else %}
                 {# Login button#}
                 <li>
-                    <a href="#" data-toggle="modal" data-target="#modal-window">
+                    <a href="#" class="link" data-toggle="modal" data-target="#modal-window">
                         Login / Sign Up
                     </a>
                 </li>

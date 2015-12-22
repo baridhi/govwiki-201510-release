@@ -3,6 +3,7 @@
 namespace GovWiki\AdminBundle\Manager;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\EntityRepository;
 use GovWiki\DbBundle\Entity\Environment;
 
 /**
@@ -28,7 +29,7 @@ abstract class AbstractAdminEntityManager implements
     private $environmentId;
 
     /**
-     * @param Environment $environment A Environment instance.
+     * @param EntityManagerInterface $em A EntityManagerInterface instance.
      */
     public function __construct(EntityManagerInterface $em) {
         $this->em = $em;
@@ -84,8 +85,6 @@ abstract class AbstractAdminEntityManager implements
             throw new \InvalidArgumentException();
         }
 
-        $entity = $this->beforeUpdate($entity);
-
         $this->em->persist($entity);
         if ($andFlush) {
             $this->em->flush();
@@ -95,11 +94,11 @@ abstract class AbstractAdminEntityManager implements
     }
 
     /**
-     * @return object
+     * @return void
      */
-    protected function beforeUpdate($entity)
+    public function flush()
     {
-        return $entity;
+        $this->em->flush();
     }
 
     /**
@@ -112,9 +111,23 @@ abstract class AbstractAdminEntityManager implements
     /**
      * @return \Doctrine\ORM\EntityRepository
      */
-    protected function getRepository()
+    protected function getRepository($entityName = null)
     {
-        return $this->em->getRepository($this->getEntityClassName());
+        if (null === $entityName) {
+            $entityName = $this->getEntityClassName();
+        }
+
+        return $this->em->getRepository($entityName);
+    }
+
+    /**
+     * @param integer $id Entity id.
+     *
+     * @return object
+     */
+    public function getReference($id)
+    {
+        return $this->em->getReference($this->getEntityClassName(), $id);
     }
 
     /**
@@ -130,11 +143,51 @@ abstract class AbstractAdminEntityManager implements
     /**
      * @return Environment
      */
-    protected function getEnvironmentReference()
+    public function getEnvironmentReference()
     {
         return $this->em->getReference(
             'GovWiki\DbBundle\Entity\Environment',
             $this->environmentId
         );
+    }
+
+    /**
+     * @param array $columns Array of columns name for fetching data from
+     *                       repository.
+     *
+     * @return array
+     */
+    public function getAll(array $columns = null, $offset = 0, $limit = null)
+    {
+        /** @var EntityRepository $repository */
+        $repository = $this->getRepository();
+
+        $alias = substr(
+            $this->getEntityClassName(),
+            strrpos($this->getEntityClassName(), '\\') + 1
+        );
+
+        $qb = $repository->createQueryBuilder($alias);
+        if (count($columns) > 0) {
+            foreach ($columns as &$column) {
+                $column = "$alias.$column";
+            }
+            $qb->select(implode(',', $columns));
+        }
+
+        $expr = $qb->expr();
+
+        if (null !== $limit) {
+            $qb->setMaxResults($limit);
+        }
+
+        return $qb
+            ->join($alias.'.environment', 'Environment')
+            ->where(
+                $expr->eq('Environment.slug', $expr->literal($this->environment))
+            )
+            ->setFirstResult($offset)
+            ->getQuery()
+            ->getArrayResult();
     }
 }

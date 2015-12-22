@@ -2,12 +2,10 @@
 
 namespace GovWiki\DbBundle\Entity\Repository;
 
-use Doctrine\ORM\Query\QueryException;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\ORMException;
 use GovWiki\DbBundle\Entity\Environment;
-use GovWiki\UserBundle\Entity\User;
 
 /**
  * EnvironmentRepository
@@ -30,8 +28,8 @@ class EnvironmentRepository extends EntityRepository
         }
 
         return $qb
-            ->select('partial Environment.{id,name,domain,enabled}')
-            ->orderBy('Environment.name')
+            ->select('partial Environment.{id,name,domain,enabled,slug}')
+            ->orderBy('Environment.slug')
             ->getQuery();
     }
 
@@ -52,7 +50,7 @@ class EnvironmentRepository extends EntityRepository
                 ->leftJoin('Environment.map', 'Map')
                 ->leftJoin('Environment.users', 'User')
                 ->where($expr->eq(
-                    'Environment.name',
+                    'Environment.slug',
                     $expr->literal($environment)
                 ));
 
@@ -69,12 +67,12 @@ class EnvironmentRepository extends EntityRepository
     }
 
     /**
-     * @param string  $name Environment name.
-     * @param integer $user User id.
+     * @param string  $environment Environment name.
+     * @param integer $user        User id.
      *
      * @return boolean|\Doctrine\Common\Proxy\Proxy|null|object
      */
-    public function getReferenceByName($name, $user = null)
+    public function getReferenceByName($environment, $user = null)
     {
         $qb = $this->createQueryBuilder('Environment');
         $expr = $qb->expr();
@@ -83,7 +81,7 @@ class EnvironmentRepository extends EntityRepository
             $qb
                 ->select('Environment.id')
                 ->leftJoin('Environment.users', 'User')
-                ->where($expr->eq('Environment.name', $expr->literal($name)));
+                ->where($expr->eq('Environment.slug', $expr->literal($environment)));
 
             if (null !== $user) {
                 $qb->andWhere($expr->eq('User.id', $user));
@@ -113,7 +111,7 @@ class EnvironmentRepository extends EntityRepository
 
         try {
             return $qb
-                ->select('Environment.name')
+                ->select('Environment.slug')
                 ->where($expr->andX(
                     $expr->eq(
                         'Environment.domain',
@@ -123,6 +121,29 @@ class EnvironmentRepository extends EntityRepository
                 ))
                 ->getQuery()
                 ->getSingleScalarResult();
+        } catch (ORMException $e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param string $environment A Environment name.
+     *
+     * @return array|null
+     */
+    public function getStyle($environment)
+    {
+        $qb = $this->createQueryBuilder('Environment');
+        $expr = $qb->expr();
+
+        try {
+            return $qb
+                ->select('Environment.style')
+                ->where(
+                    $expr->eq('Environment.slug', $expr->literal($environment))
+                )
+                ->getQuery()
+                ->getSingleResult()['style'];
         } catch (ORMException $e) {
             return null;
         }

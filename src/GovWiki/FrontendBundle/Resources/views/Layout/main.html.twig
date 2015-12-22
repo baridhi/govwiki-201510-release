@@ -18,18 +18,22 @@
 
     <body>
 
+        {# Header #}
         <header class="container">
             {{ include('GovWikiFrontendBundle:Partial:header.html.twig') }}
         </header>
 
+        {# Main content #}
         <main class="container">
             {% block main %}{% endblock %}
         </main>
 
+        {# Footer #}
         <footer class="container">
             {{ include('GovWikiFrontendBundle:Partial:footer.html.twig') }}
         </footer>
 
+        {# Login modal window #}
         <div id="modal-window" class="modal fade">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
@@ -70,6 +74,11 @@
             </div>
         </div>
 
+        {# Overflow all page and show loader (disabled via script.js) #}
+        {#<div class="loader_wrap">#}
+            {#<div class="loader"></div>#}
+        {#</div>#}
+
         <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 
@@ -77,6 +86,11 @@
             {# Govwiki namespace #}
             <script> window.gw = {}; </script>
             <script> window.gw.authorized = "{{ app.user }}"; </script>
+            {% set username = '' %}
+            {% if app.user %}
+                {% set username = app.user.username %}
+            {% endif %}
+            <script> window.gw.username = "{{ username }}"; </script>
         {% endblock %}
 
     </body>

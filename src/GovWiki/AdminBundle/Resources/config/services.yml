@@ -15,3 +15,22 @@ services:
             - @security.token_storage
             - @session
         configurator: [@govwiki_api.environment_manager.configurator, configure]
+
+    govwiki_admin.manager.style:
+        class: GovWiki\AdminBundle\Manager\AdminStyleManager
+        arguments:
+            - @form.factory
+            - @govwiki_admin.manager.environment
+            - %kernel.root_dir%/../web/img
+
+    govwiki_admin.listener.government_sync:
+        class: GovWiki\AdminBundle\Listener\SyncGovernmentWithCartoDb
+        arguments: [@carto_db.api]
+        tags:
+            - { name: doctrine.event_subscriber }
+
+    govwiki_admin.listener.wizard:
+        class: GovWiki\AdminBundle\Listener\WizardStepListener
+        arguments: [@session]
+        tags:
+            - { name: kernel.event_listener, event: kernel.controller }

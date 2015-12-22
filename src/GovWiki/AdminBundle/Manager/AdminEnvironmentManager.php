@@ -72,12 +72,16 @@ class AdminEnvironmentManager implements EnvironmentManagerAwareInterface
     }
 
     /**
-     * @param string $environment Environment name.
+     * @param string|Environment $environment A Environment instance or slug.
      *
      * @return AdminEnvironmentManager
      */
     public function changeEnvironment($environment)
     {
+        if ($environment instanceof Environment) {
+            $environment = $environment->getSlug();
+        }
+
         $this->session->set(self::ENVIRONMENT_PARAMETER, $environment);
         $this->environment = $environment;
 
@@ -95,15 +99,6 @@ class AdminEnvironmentManager implements EnvironmentManagerAwareInterface
         if (null === $this->environment) {
             $this->changeEnvironment($environment);
         }
-    }
-
-    /**
-     * @return
-     */
-    public function getMap()
-    {
-        return $this->em->getRepository('GovWikiDbBundle:Map')
-            ->getByEnvironment($this->environment);
     }
 
     /**
@@ -125,6 +120,50 @@ class AdminEnvironmentManager implements EnvironmentManagerAwareInterface
     }
 
     /**
+     * @return string
+     */
+    public function getSlug()
+    {
+        return Environment::slugify($this->environment);
+    }
+
+    /**
+    * Get map data for current environment.
+    *
+    * @return \GovWiki\DbBundle\Entity\Map|null
+    */
+    public function getMap()
+    {
+        return $this->em->getRepository('GovWikiDbBundle:Map')
+            ->getByEnvironment($this->environment);
+    }
+
+    /**
+     * @return array|null
+     */
+    public function getStyle()
+    {
+        return $this->em->getRepository('GovWikiDbBundle:Environment')
+            ->getStyle($this->environment);
+    }
+
+    /**
+     * @param array $style Styles.
+     *
+     * @return void
+     */
+    public function setStyle(array $style)
+    {
+        $environment = $this->getReference();
+        $environment->setStyle($style);
+
+        $this->em->persist($environment);
+        $this->em->flush();
+    }
+
+    /**
+     * Return environment entity.
+     *
      * @return \GovWiki\DbBundle\Entity\Environment|null
      *
      * @throws AccessDeniedException User don't allow to manage current
@@ -150,25 +189,8 @@ class AdminEnvironmentManager implements EnvironmentManagerAwareInterface
     }
 
     /**
-     * @param string $environment Environment name.
+     * Get proxy environment entity.
      *
-     * @return AdminEnvironmentManager
-     *
-     * @throws AccessDeniedException User don't allow to manage current
-     * environment.
-     */
-    public function removeEnvironment($environment)
-    {
-        $this->environment = $environment;
-        $entity = $this->getReference();
-
-        $this->em->remove($entity);
-        $this->em->flush();
-
-        return $this;
-    }
-
-    /**
      * @return Environment
      *
      * @throws AccessDeniedException User don't allow to manage current
@@ -187,6 +209,35 @@ class AdminEnvironmentManager implements EnvironmentManagerAwareInterface
         }
 
         throw new AccessDeniedException();
+    }
+
+    /**
+     * @param string $environment Environment name.
+     *
+     * @return AdminEnvironmentManager
+     *
+     * @throws AccessDeniedException User don't allow to manage current
+     * environment.
+     */
+    public function removeEnvironment($environment)
+    {
+        $this->environment = $environment;
+        $entity = $this->getReference();
+
+        $qb = $this->em->createQueryBuilder();
+        $expr = $qb->expr();
+
+        $qb
+            ->delete()
+            ->from('GovWikiDbBundle:Government', 'Government')
+            ->where($expr->eq('Government.environment', $entity->getId()))
+            ->getQuery()
+            ->execute();
+
+        $this->em->remove($entity);
+        $this->em->flush();
+
+        return $this;
     }
 
     /**
@@ -218,9 +269,23 @@ class AdminEnvironmentManager implements EnvironmentManagerAwareInterface
     }
 
     /**
+     * @param boolean $plain Flag, if set return plain array without grouping by
+     *                       tab names and fields.
+     *
+     * @return array
+     */
+    public function getFormats($plain = false)
+    {
+        return $this->em->getRepository('GovWikiDbBundle:Format')
+            ->get($this->environment, $plain);
+    }
+
+    /**
      * @param AdminEntityManagerAwareInterface $entityManager A
      *                                                        AdminEntityManagerAwareInterface
      *                                                        instance.
+     *
+     * @return void
      */
     public function configure(AdminEntityManagerAwareInterface $entityManager)
     {

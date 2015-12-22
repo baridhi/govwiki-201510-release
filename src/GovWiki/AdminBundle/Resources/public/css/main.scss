@@ -1,0 +1,97 @@
+
+@import "variables";
+@import "textHelper";
+
+@import "partials/head/head";
+
+
+/* Temporary styles (start) */
+
+.index-page-head {
+   margin-bottom: 16px;
+}
+
+.index-page-head ul.pagination {
+   margin: 0;
+}
+
+.btn-beside-pills {
+   margin-top: -40px;
+   margin-bottom: 10px;
+   height: 40px;
+   padding: 9px 12px;
+}
+
+.label-like {
+   font-weight: 700;
+}
+
+@mixin mobile-controls() {
+
+   @media (max-width: $screen-sm-max) {
+      .controls {
+         margin-top: 0;
+         margin-bottom: 15px;
+
+         &.btn-group {
+            margin-top: 0;
+            margin-bottom: 15px;
+         }
+      }
+   }
+
+}
+
+.controls {
+   margin: 23px auto;
+
+   &.btn-group {
+      margin-top: 23px;
+   }
+}
+
+@include mobile-controls();
+
+/* Temporary styles (end) */
+
+
+/* ===================================================== */
+/* ======== Customize bootstrap & global styles ======== */
+/* ===================================================== */
+
+@import "partials/dropdown-menu/dropdown-menu";
+
+.table {
+   .actions {
+      min-width: 170px;
+   }
+}
+
+// Center th cells
+.table.text-center th, td {
+   text-align: center;
+}
+
+.table > thead > tr {
+
+   & > th {
+      vertical-align: middle;
+   }
+
+   & > td {
+      vertical-align: middle;
+   }
+
+}
+
+.table > tbody > tr {
+
+   & > th {
+      vertical-align: middle;
+   }
+
+   & > td {
+      vertical-align: middle;
+   }
+
+}
